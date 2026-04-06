@@ -1,6 +1,7 @@
 // lib/router.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/spc_screen.dart';
@@ -9,16 +10,15 @@ import 'screens/history_screen.dart';
 import 'screens/image_view_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/login_screen.dart';
+import 'theme.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
-    // Login screen (hors shell - pas de navigation bar)
     GoRoute(
       path: '/login',
       builder: (c, s) => const LoginScreen(),
     ),
-    // Main app avec navigation bar
     ShellRoute(
       builder: (context, state, child) => _Shell(child: child),
       routes: [
@@ -28,7 +28,6 @@ final appRouter = GoRouter(
         GoRoute(path: '/history', builder: (c, s) => const HistoryScreen()),
       ],
     ),
-    // Image accessible depuis Historique — pas dans la nav
     GoRoute(
       path: '/image',
       builder: (c, s) => const ImageViewScreen(),
@@ -40,12 +39,12 @@ final appRouter = GoRouter(
   ],
 );
 
-class _Shell extends StatelessWidget {
+class _Shell extends ConsumerWidget {
   final Widget child;
   const _Shell({required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.toString();
     final idx = switch (location) {
       '/' => 0,
@@ -57,40 +56,119 @@ class _Shell extends StatelessWidget {
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: idx,
-        onDestinationSelected: (i) {
-          switch (i) {
-            case 0:
-              context.go('/');
-            case 1:
-              context.go('/spc');
-            case 2:
-              context.go('/camera');
-            case 3:
-              context.go('/history');
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.bgWhite,
+          border: Border(
+            top: BorderSide(color: AppTheme.border, width: 1),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.show_chart_outlined),
-            selectedIcon: Icon(Icons.show_chart),
-            label: 'SPC',
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _NavItem(
+                  icon: Icons.grid_view_outlined,
+                  selectedIcon: Icons.grid_view,
+                  label: 'DASHBOARD',
+                  isSelected: idx == 0,
+                  onTap: () => context.go('/'),
+                ),
+                _NavItem(
+                  icon: Icons.show_chart_outlined,
+                  selectedIcon: Icons.show_chart,
+                  label: 'SPC',
+                  isSelected: idx == 1,
+                  onTap: () => context.go('/spc'),
+                ),
+                // Download button center
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.bgLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.download_outlined,
+                    color: AppTheme.textSecondary,
+                    size: 22,
+                  ),
+                ),
+                _NavItem(
+                  icon: Icons.videocam_outlined,
+                  selectedIcon: Icons.videocam,
+                  label: 'CAMÉRA',
+                  isSelected: idx == 2,
+                  onTap: () => context.go('/camera'),
+                ),
+                _NavItem(
+                  icon: Icons.access_time_outlined,
+                  selectedIcon: Icons.access_time_filled,
+                  label: 'HISTORIQUE',
+                  isSelected: idx == 3,
+                  onTap: () => context.go('/history'),
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.videocam_outlined),
-            selectedIcon: Icon(Icons.videocam),
-            label: 'Caméra',
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected ? AppTheme.primaryBlue : AppTheme.textSecondary;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isSelected ? selectedIcon : icon,
+            color: color,
+            size: 22,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'Historique',
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              color: color,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Underline indicator
+          Container(
+            width: 20,
+            height: 2,
+            decoration: BoxDecoration(
+              color: isSelected ? AppTheme.primaryBlue : Colors.transparent,
+              borderRadius: BorderRadius.circular(1),
+            ),
           ),
         ],
       ),

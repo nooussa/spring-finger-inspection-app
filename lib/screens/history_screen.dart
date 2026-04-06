@@ -17,9 +17,9 @@ class HistoryScreen extends ConsumerWidget {
     final totalCount = ref.watch(totalCountProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgDark,
+      backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgDark,
+        backgroundColor: AppTheme.bgWhite,
         title: Row(
           children: [
             const Text('Historique'),
@@ -27,7 +27,7 @@ class HistoryScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppTheme.bgSurface,
+                color: AppTheme.bgLight,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -61,7 +61,7 @@ class HistoryScreen extends ConsumerWidget {
                 }
                 return RefreshIndicator(
                   color: AppTheme.passGreen,
-                  backgroundColor: AppTheme.bgCard,
+                  backgroundColor: AppTheme.bgWhite,
                   onRefresh: () async {
                     ref.invalidate(inspectionHistoryProvider(100));
                     await Future.delayed(const Duration(milliseconds: 500));
@@ -127,7 +127,7 @@ class HistoryScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         border: Border(
           bottom: BorderSide(color: AppTheme.border, width: 0.5),
         ),
@@ -227,7 +227,7 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected
-              ? (color?.withValues(alpha: 0.15) ?? AppTheme.bgSurface)
+              ? (color?.withValues(alpha: 0.15) ?? AppTheme.bgLight)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(

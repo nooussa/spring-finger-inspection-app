@@ -20,8 +20,8 @@ class FeedItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPass = inspection.isPass;
     final color = isPass ? AppTheme.passGreen : AppTheme.failRed;
-    final bg = isPass ? const Color(0xFF071A0E) : const Color(0xFF1A0707);
-    final border = isPass ? const Color(0xFF0F3D1E) : const Color(0xFF3D0F0F);
+    final bg = isPass ? AppTheme.passBgLight : AppTheme.failBgLight;
+    final border = (isPass ? AppTheme.passGreen : AppTheme.failRed).withValues(alpha: 0.3);
 
     final ts = _formatTime(inspection.timestamp);
 
@@ -31,9 +31,9 @@ class FeedItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 5),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF111318),
+          color: AppTheme.bgWhite,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF1A1D24), width: 0.5),
+          border: Border.all(color: AppTheme.border, width: 0.5),
         ),
         child: Row(
           children: [
@@ -100,7 +100,7 @@ class FeedItem extends StatelessWidget {
                         '${inspection.nBent} pliés',
                         style: const TextStyle(
                           fontSize: 9,
-                          color: AppTheme.warnAmber,
+                          color: AppTheme.warnOrange,
                         ),
                       ),
                   ],

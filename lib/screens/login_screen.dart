@@ -75,7 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgDark,
+      backgroundColor: AppTheme.bgLight,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -134,7 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: const Icon(Icons.person_outline,
                         color: AppTheme.textSecondary),
                     filled: true,
-                    fillColor: AppTheme.bgCard,
+                    fillColor: AppTheme.bgWhite,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppTheme.border),
@@ -166,7 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: const Icon(Icons.lock_outline,
                         color: AppTheme.textSecondary),
                     filled: true,
-                    fillColor: AppTheme.bgCard,
+                    fillColor: AppTheme.bgWhite,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppTheme.border),
@@ -221,18 +221,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: _loading ? null : _tryLogin,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.passGreen,
-                      foregroundColor: AppTheme.bgDark,
+                      foregroundColor: AppTheme.bgWhite,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: _loading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppTheme.bgDark,
+                              color: AppTheme.bgWhite,
                             ),
                           )
                         : const Text(

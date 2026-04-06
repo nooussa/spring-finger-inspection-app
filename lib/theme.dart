@@ -1,45 +1,49 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color passGreen = Color(0xFF4ADE80);
-  static const Color failRed = Color(0xFFF87171);
-  static const Color warnAmber = Color(0xFFFBBF24);
-  static const Color bgDark = Color(0xFF0D0F14);
-  static const Color bgCard = Color(0xFF111318);
-  static const Color bgSurface = Color(0xFF1A1D24);
-  static const Color border = Color(0xFF2A2D35);
-  static const Color textPrimary = Color(0xFFF0F0F0);
-  static const Color textSecondary = Color(0xFF888780);
+  // Couleurs principales
+  static const Color passGreen = Color(0xFF22C55E);
+  static const Color failRed = Color(0xFFEF4444);
+  static const Color warnOrange = Color(0xFFF97316);
+  static const Color primaryBlue = Color(0xFF3B82F6);
+  
+  // Fond et surfaces (thème clair)
+  static const Color bgLight = Color(0xFFF5F5F5);
+  static const Color bgWhite = Color(0xFFFFFFFF);
+  static const Color border = Color(0xFFE5E7EB);
+  
+  // Texte
+  static const Color textPrimary = Color(0xFF111827);
+  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textMuted = Color(0xFF9CA3AF);
 
-  static ThemeData dark() {
+  // Couleurs de fond légères pour badges
+  static const Color passBgLight = Color(0xFFDCFCE7);
+  static const Color failBgLight = Color(0xFFFEE2E2);
+  static const Color orangeBgLight = Color(0xFFFFF7ED);
+  static const Color blueBgLight = Color(0xFFDBEAFE);
+
+  static ThemeData light() {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: bgDark,
-      colorScheme: const ColorScheme.dark(
-        surface: bgDark,
-        primary: passGreen,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: bgLight,
+      colorScheme: const ColorScheme.light(
+        surface: bgWhite,
+        primary: primaryBlue,
         error: failRed,
-        secondary: warnAmber,
+        secondary: warnOrange,
       ),
-      cardColor: bgCard,
+      cardColor: bgWhite,
       appBarTheme: const AppBarTheme(
-        backgroundColor: bgDark,
+        backgroundColor: bgWhite,
         foregroundColor: textPrimary,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
           color: textPrimary,
-          letterSpacing: -0.3,
-        ),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: bgCard,
-        indicatorColor: AppTheme.passGreen.withOpacity(0.15),
-        labelTextStyle: WidgetStateProperty.all(
-          const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
         ),
       ),
     );

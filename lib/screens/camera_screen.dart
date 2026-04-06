@@ -76,9 +76,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     final apiService = ref.watch(apiServiceProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgDark,
+      backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgDark,
+        backgroundColor: AppTheme.bgWhite,
         title: const Text('Caméra live'),
         actions: [
           _LiveBadge(error: _error),
@@ -127,7 +127,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.bgCard,
+              color: AppTheme.bgWhite,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppTheme.border, width: 0.5),
             ),

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Badge de statut coloré réutilisable.
-/// Supporte: 'PASS', 'FAIL', 'LIVE', 'OFF', ou tout texte personnalisé.
 class StatusBadge extends StatelessWidget {
   final String status;
   final bool animate;
@@ -60,35 +59,35 @@ class StatusBadge extends StatelessWidget {
     return switch (status.toUpperCase()) {
       'PASS' => (
           AppTheme.passGreen,
-          const Color(0xFF071A0E),
-          const Color(0xFF0F3D1E)
+          AppTheme.passBgLight,
+          AppTheme.passGreen.withValues(alpha: 0.3)
         ),
       'FAIL' => (
           AppTheme.failRed,
-          const Color(0xFF1A0707),
-          const Color(0xFF3D0F0F)
+          AppTheme.failBgLight,
+          AppTheme.failRed.withValues(alpha: 0.3)
         ),
-      'LIVE' => (
+      'LIVE' || 'RUNNING' => (
           AppTheme.passGreen,
-          const Color(0xFF0F1A12),
-          const Color(0xFF1A3D22)
+          AppTheme.passBgLight,
+          AppTheme.passGreen.withValues(alpha: 0.3)
         ),
-      'OFF' => (
+      'OFF' || 'STOPPED' => (
           AppTheme.failRed,
-          const Color(0xFF1A0707),
-          const Color(0xFF3D0F0F)
+          AppTheme.failBgLight,
+          AppTheme.failRed.withValues(alpha: 0.3)
         ),
       'DÉRIVE' || 'DRIFT' => (
-          AppTheme.warnAmber,
-          const Color(0xFF1A1400),
-          const Color(0xFF3D2E00)
+          AppTheme.warnOrange,
+          AppTheme.orangeBgLight,
+          AppTheme.warnOrange.withValues(alpha: 0.3)
         ),
       'WARN' || 'WARNING' => (
-          AppTheme.warnAmber,
-          const Color(0xFF1A1400),
-          const Color(0xFF3D2E00)
+          AppTheme.warnOrange,
+          AppTheme.orangeBgLight,
+          AppTheme.warnOrange.withValues(alpha: 0.3)
         ),
-      _ => (AppTheme.textSecondary, AppTheme.bgCard, AppTheme.border),
+      _ => (AppTheme.textSecondary, AppTheme.bgLight, AppTheme.border),
     };
   }
 }
@@ -139,7 +138,7 @@ class _AnimatedDotState extends State<_AnimatedDot>
   }
 }
 
-/// Badge de connexion API (LIVE/OFF)
+/// Badge de connexion API (RUNNING/STOPPED)
 class ConnectionBadge extends StatelessWidget {
   final bool connected;
 
@@ -151,7 +150,7 @@ class ConnectionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StatusBadge(
-      status: connected ? 'LIVE' : 'OFF',
+      status: connected ? 'RUNNING' : 'STOPPED',
       animate: connected,
     );
   }
@@ -173,15 +172,15 @@ class DriftBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1400),
+        color: AppTheme.orangeBgLight,
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: const Color(0xFF3D2E00), width: 0.5),
+        border: Border.all(color: AppTheme.warnOrange.withValues(alpha: 0.3), width: 0.5),
       ),
       child: const Text(
         'DÉRIVE',
         style: TextStyle(
           fontSize: 10,
-          color: AppTheme.warnAmber,
+          color: AppTheme.warnOrange,
         ),
       ),
     );

@@ -87,9 +87,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final apiService = ref.watch(apiServiceProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgDark,
+      backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgDark,
+        backgroundColor: AppTheme.bgWhite,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -144,7 +144,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
@@ -171,7 +171,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 color: AppTheme.textSecondary.withValues(alpha: 0.5),
               ),
               filled: true,
-              fillColor: AppTheme.bgSurface,
+              fillColor: AppTheme.bgWhite,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: AppTheme.border),
@@ -208,7 +208,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: _testing ? null : _testConnection,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.passGreen,
-                    foregroundColor: AppTheme.bgDark,
+                    foregroundColor: AppTheme.bgWhite,
                   ),
                   child: _testing
                       ? const SizedBox(
@@ -216,7 +216,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppTheme.bgDark,
+                            color: AppTheme.bgWhite,
                           ),
                         )
                       : const Text('Tester'),
@@ -276,7 +276,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
@@ -306,7 +306,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
@@ -334,7 +334,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.bgCard,
+              color: AppTheme.bgWhite,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppTheme.border, width: 0.5),
             ),

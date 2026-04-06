@@ -34,8 +34,8 @@ class MetricCard extends StatelessWidget {
       label: 'PASS',
       value: value,
       valueColor: AppTheme.passGreen,
-      bgColor: const Color(0xFF071A0E),
-      borderColor: const Color(0xFF0F3D1E),
+      bgColor: AppTheme.passBgLight,
+      borderColor: AppTheme.passGreen.withValues(alpha: 0.3),
       sub: sub,
       isEmpty: isEmpty,
     );
@@ -51,8 +51,8 @@ class MetricCard extends StatelessWidget {
       label: 'FAIL',
       value: value,
       valueColor: AppTheme.failRed,
-      bgColor: const Color(0xFF1A0707),
-      borderColor: const Color(0xFF3D0F0F),
+      bgColor: AppTheme.failBgLight,
+      borderColor: AppTheme.failRed.withValues(alpha: 0.3),
       sub: sub,
       isEmpty: isEmpty,
     );

@@ -19,9 +19,9 @@ class ImageViewScreen extends ConsumerWidget {
 
     if (inspection == null) {
       return Scaffold(
-        backgroundColor: AppTheme.bgDark,
+        backgroundColor: AppTheme.bgLight,
         appBar: AppBar(
-          backgroundColor: AppTheme.bgDark,
+          backgroundColor: AppTheme.bgWhite,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
@@ -40,9 +40,9 @@ class ImageViewScreen extends ConsumerWidget {
     final apiService = ref.read(apiServiceProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgDark,
+      backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgDark,
+        backgroundColor: AppTheme.bgWhite,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -96,7 +96,7 @@ class ImageViewScreen extends ConsumerWidget {
     return Container(
       height: 220,
       width: double.infinity,
-      color: AppTheme.bgCard,
+      color: AppTheme.bgWhite,
       child: hasImage
           ? Image.network(
               '${apiService.baseUrl}/images/${inspection.imagePath}',
@@ -150,7 +150,7 @@ class ImageViewScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
@@ -205,7 +205,7 @@ class ImageViewScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
@@ -314,7 +314,7 @@ class ImageViewScreen extends ConsumerWidget {
                   label: 'Pliés',
                   value: inspection.nBent,
                   color: inspection.nBent > 0
-                      ? AppTheme.warnAmber
+                      ? AppTheme.warnOrange
                       : AppTheme.textSecondary,
                 ),
               ),
@@ -323,7 +323,7 @@ class ImageViewScreen extends ConsumerWidget {
                   label: 'Alertes',
                   value: inspection.nbAlertes,
                   color: inspection.nbAlertes > 0
-                      ? AppTheme.warnAmber
+                      ? AppTheme.warnOrange
                       : AppTheme.textSecondary,
                 ),
               ),
@@ -382,7 +382,7 @@ class ImageViewScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
@@ -420,7 +420,7 @@ class ImageViewScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.bgCard,
+        color: AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
@@ -627,7 +627,7 @@ class _FingerRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: hasIssue
             ? AppTheme.failRed.withValues(alpha: 0.05)
-            : AppTheme.bgSurface,
+            : AppTheme.bgWhite,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: hasIssue
@@ -674,12 +674,12 @@ class _FingerRow extends StatelessWidget {
               margin: const EdgeInsets.only(left: 4),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: AppTheme.warnAmber.withValues(alpha: 0.15),
+                color: AppTheme.warnOrange.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(3),
               ),
               child: const Text(
                 'PLIÉ',
-                style: TextStyle(fontSize: 8, color: AppTheme.warnAmber),
+                style: TextStyle(fontSize: 8, color: AppTheme.warnOrange),
               ),
             ),
         ],
