@@ -14,7 +14,7 @@ class InspectionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Inspection PCB',
+      title: 'Starz Quality Control',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: appRouter,

@@ -78,14 +78,25 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgWhite,
-        title: const Text('Caméra live'),
+        iconTheme: const IconThemeData(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryBlue.withValues(alpha: 0.9),
+                AppTheme.failRed.withValues(alpha: 0.9),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
+        title: const Text('Caméra live', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
         actions: [
           _LiveBadge(error: _error),
           const SizedBox(width: 12),
           IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: AppTheme.textSecondary),
+            icon: const Icon(Icons.settings_outlined, color: Colors.white),
             onPressed: () => context.push('/settings'),
           ),
         ],

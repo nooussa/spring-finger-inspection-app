@@ -83,20 +83,7 @@ class _Shell extends ConsumerWidget {
                   isSelected: idx == 1,
                   onTap: () => context.go('/spc'),
                 ),
-                // Download button center
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.bgLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.download_outlined,
-                    color: AppTheme.textSecondary,
-                    size: 22,
-                  ),
-                ),
+
                 _NavItem(
                   icon: Icons.videocam_outlined,
                   selectedIcon: Icons.videocam,

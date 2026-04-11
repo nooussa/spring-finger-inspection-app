@@ -82,9 +82,15 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildHeader(BuildContext context, bool isConnected) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: AppTheme.bgWhite,
-        border: Border(bottom: BorderSide(color: AppTheme.border, width: 1)),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryBlue.withValues(alpha: 0.9),
+            AppTheme.failRed.withValues(alpha: 0.9)
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Row(
         children: [
@@ -93,10 +99,27 @@ class DashboardScreen extends ConsumerWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue,
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ],
             ),
-            child: const Icon(Icons.memory, color: Colors.white, size: 24),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.memory,
+                  color: AppTheme.primaryBlue,
+                  size: 24,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           
@@ -106,18 +129,18 @@ class DashboardScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Inspection PCB',
+                  'Starz Quality Control',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: Colors.white,
                   ),
                 ),
                 Text(
                   'Contrôle Qualité — Ligne 3 · Station A',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondary,
+                    color: Colors.white70,
                   ),
                 ),
               ],
@@ -130,21 +153,21 @@ class DashboardScreen extends ConsumerWidget {
           
           // Icons
           IconButton(
-            icon: const Icon(Icons.light_mode_outlined, color: AppTheme.textSecondary),
+            icon: const Icon(Icons.light_mode_outlined, color: Colors.white),
             onPressed: () {},
             iconSize: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: AppTheme.textSecondary),
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
             onPressed: () {},
             iconSize: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert, color: AppTheme.textSecondary),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: () => context.push('/settings'),
             iconSize: 20,
             padding: EdgeInsets.zero,
@@ -200,11 +223,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildLeftColumn(dynamic spcState, int pass, int fail, double rate, BuildContext context) {
     return Column(
       children: [
-        // SPC Chart
+        // SPC Curve Chart
         _buildSpcCard(spcState, context),
-        const SizedBox(height: 16),
-        // Pass/Fail Summary
-        _buildPassFailSummary(pass, fail, rate),
       ],
     );
   }
@@ -212,28 +232,16 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildSpcCard(dynamic spcState, BuildContext context) {
     final pitches = spcState.pitches as List<double>;
 
-    return Container(
+    return _GradientBorderBox(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'CARTE SPC — PITCH (MM)',
+                'ÉVOLUTION SPC — PITCH (MM)',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -244,7 +252,7 @@ class DashboardScreen extends ConsumerWidget {
               GestureDetector(
                 onTap: () => context.push('/spc'),
                 child: const Text(
-                  'Voir détail →',
+                  'Défauts globaux →',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.primaryBlue,
@@ -254,15 +262,13 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          
-          // Chart
+          const SizedBox(height: 24),
           SizedBox(
             height: 180,
             child: pitches.length < 2
                 ? const Center(
                     child: Text(
-                      'En attente de données...',
+                      'En attente de données suffisantes...',
                       style: TextStyle(color: AppTheme.textSecondary),
                     ),
                   )
@@ -271,186 +277,15 @@ class DashboardScreen extends ConsumerWidget {
                     size: Size.infinite,
                   ),
           ),
-          
-          // Legend
-          const SizedBox(height: 12),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _LegendItem(color: AppTheme.passGreen, label: 'Pass', isCircle: true),
-              SizedBox(width: 16),
-              _LegendItem(color: AppTheme.failRed, label: 'Fail', isCircle: true),
-              SizedBox(width: 16),
-              _LegendItem(color: AppTheme.failRed, label: 'UCL / LCL', isDashed: true),
-              SizedBox(width: 16),
-              _LegendItem(color: AppTheme.primaryBlue, label: 'Tendance'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPassFailSummary(int pass, int fail, double rate) {
-    final total = pass + fail;
-    final passRate = total > 0 ? (pass / total * 100) : 0.0;
-    final failRate = total > 0 ? (fail / total * 100) : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Pass/Fail columns
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    const Text(
-                      'PASS',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$pass',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.passGreen,
-                      ),
-                    ),
-                    Text(
-                      '${passRate.toStringAsFixed(1)}% conformes',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(width: 1, height: 60, color: AppTheme.border),
-              Expanded(
-                child: Column(
-                  children: [
-                    const Text(
-                      'FAIL',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$fail',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.failRed,
-                      ),
-                    ),
-                    Text(
-                      '${failRate.toStringAsFixed(1)}% rebuts',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
-          
-          // Progress bar
-          Column(
+          // Légende des abréviations
+          const Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'TAUX DE CONFORMITÉ',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    '${(rate * 100).toStringAsFixed(1)}%',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.warnOrange,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return Stack(
-                    children: [
-                      // Background
-                      Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AppTheme.border,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      // Fill
-                      FractionallySizedBox(
-                        widthFactor: rate.clamp(0.0, 1.0),
-                        child: Container(
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: AppTheme.passGreen,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                      // Target marker at 95%
-                      Positioned(
-                        left: constraints.maxWidth * 0.95,
-                        child: Container(
-                          width: 2,
-                          height: 8,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 4),
-              const Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'Cible : 95%',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ),
+              _LegendItemText(color: AppTheme.failRed, label: 'UCL: Upper Control Limit (Max)'),
+              _LegendItemText(color: AppTheme.primaryBlue, label: 'CL: Center Line (Cible)'),
+              _LegendItemText(color: AppTheme.failRed, label: 'LCL: Lower Control Limit (Min)'),
             ],
           ),
         ],
@@ -459,19 +294,8 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildLiveFeed(AsyncValue<List<InspectionResult>> inspectionsAsync, int total, BuildContext context) {
-    return Container(
+    return _GradientBorderBox(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -546,6 +370,46 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 // === WIDGETS ===
+
+class _GradientBorderBox extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const _GradientBorderBox({required this.child, required this.padding});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(13),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.failRed.withValues(alpha: 0.6),
+            AppTheme.primaryBlue.withValues(alpha: 0.6),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: AppTheme.bgWhite,
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
 
 class _LiveBadge extends StatefulWidget {
   final bool isLive;
@@ -630,19 +494,8 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return _GradientBorderBox(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -690,80 +543,6 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  final bool isCircle;
-  final bool isDashed;
-
-  const _LegendItem({
-    required this.color,
-    required this.label,
-    this.isCircle = false,
-    this.isDashed = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (isCircle)
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          )
-        else if (isDashed)
-          CustomPaint(
-            size: const Size(20, 2),
-            painter: _DashedLinePainter(color: color),
-          )
-        else
-          Container(
-            width: 20,
-            height: 2,
-            color: color,
-          ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DashedLinePainter extends CustomPainter {
-  final Color color;
-  _DashedLinePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2;
-    
-    const dashWidth = 4.0;
-    const dashSpace = 2.0;
-    double x = 0;
-    
-    while (x < size.width) {
-      canvas.drawLine(Offset(x, size.height / 2), Offset(x + dashWidth, size.height / 2), paint);
-      x += dashWidth + dashSpace;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 
 class _FeedItem extends StatelessWidget {
   final InspectionResult inspection;
@@ -912,80 +691,111 @@ class _SpcChartPainter extends CustomPainter {
     const double maxV = ucl + 0.2;
     const double range = maxV - minV;
 
-    double py(double v) => size.height - 20 - ((v - minV) / range) * (size.height - 40);
-    double px(int i) => 40 + (i * (size.width - 60) / (pitches.length - 1).clamp(1, 999));
+    double py(double v) => size.height - 25 - ((v - minV) / range) * (size.height - 40);
+    double px(int i) => 40 + (i * (size.width - 50) / (pitches.length - 1).clamp(1, 999));
 
-    // Draw horizontal lines (UCL, CL, LCL)
-    final uclPaint = Paint()
-      ..color = AppTheme.failRed
+    // 1. Tracer les lignes horizontales (LCL, CL, UCL)
+    final limitPaint = Paint()
+      ..color = AppTheme.failRed.withValues(alpha: 0.8)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
     final clPaint = Paint()
-      ..color = AppTheme.primaryBlue
+      ..color = AppTheme.primaryBlue.withValues(alpha: 0.8)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
-    // UCL line (dashed)
-    _drawDashedLine(canvas, Offset(40, py(ucl)), Offset(size.width - 10, py(ucl)), uclPaint);
-    // LCL line (dashed)
-    _drawDashedLine(canvas, Offset(40, py(lcl)), Offset(size.width - 10, py(lcl)), uclPaint);
-    // CL line (dashed blue)
-    _drawDashedLine(canvas, Offset(40, py(cl)), Offset(size.width - 10, py(cl)), clPaint);
+    _drawDashedLine(canvas, Offset(40, py(ucl)), Offset(size.width, py(ucl)), limitPaint);
+    _drawDashedLine(canvas, Offset(40, py(lcl)), Offset(size.width, py(lcl)), limitPaint);
+    _drawDashedLine(canvas, Offset(40, py(cl)), Offset(size.width, py(cl)), clPaint);
 
-    // Labels
-    _drawLabel(canvas, 'UCL $ucl', 0, py(ucl) - 6, AppTheme.failRed);
-    _drawLabel(canvas, 'CL $cl', 0, py(cl) - 6, AppTheme.primaryBlue);
-    _drawLabel(canvas, 'LCL $lcl', 0, py(lcl) - 6, AppTheme.failRed);
+    // Labels UCL, CL, LCL
+    _drawLabel(canvas, 'UCL', 5, py(ucl) - 12, AppTheme.failRed);
+    _drawLabel(canvas, 'CL', 5, py(cl) - 12, AppTheme.primaryBlue);
+    _drawLabel(canvas, 'LCL', 5, py(lcl) - 12, AppTheme.failRed);
 
-    // Draw trend line
-    if (pitches.length >= 2) {
-      final path = Path();
-      for (int i = 0; i < pitches.length; i++) {
-        final x = px(i);
-        final y = py(pitches[i]);
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
+    // 2. Préparer le parcours des points sans lissage (ligne droite)
+    final curvePath = Path();
+    for (int i = 0; i < pitches.length; i++) {
+      final x = px(i);
+      final y = py(pitches[i]);
+      if (i == 0) {
+        curvePath.moveTo(x, y);
+      } else {
+        curvePath.lineTo(x, y); // Pas lissé = trait droit industriel
       }
-      canvas.drawPath(
-        path,
+    }
+
+    // 3. Ombrage de fond sous la ligne
+    final fillPath = Path.from(curvePath)
+      ..lineTo(px(pitches.length - 1), size.height - 25)
+      ..lineTo(px(0), size.height - 25)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          AppTheme.failRed.withValues(alpha: 0.15),
+          AppTheme.primaryBlue.withValues(alpha: 0.15),
+        ],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..style = PaintingStyle.fill;
+    
+    canvas.drawPath(fillPath, fillPaint);
+
+    // 4. Ligne Principale
+    final gradient = LinearGradient(
+      colors: [
+        AppTheme.failRed.withValues(alpha: 0.9),
+        AppTheme.primaryBlue.withValues(alpha: 0.9),
+      ],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    final linePaint = Paint()
+      ..shader = gradient
+      ..strokeWidth = 3.0
+      ..strokeJoin = StrokeJoin.round // jointures droites mais adoucies
+      ..style = PaintingStyle.stroke;
+      
+    canvas.drawPath(curvePath, linePaint);
+
+    // 5. Points et Axes (X labels)
+    for (int i = 0; i < pitches.length; i++) {
+      final x = px(i);
+      final y = py(pitches[i]);
+      
+      canvas.drawCircle(
+        Offset(x, y),
+        4.5,
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(
+        Offset(x, y),
+        4.5,
         Paint()
           ..color = AppTheme.primaryBlue
           ..strokeWidth = 2
           ..style = PaintingStyle.stroke,
       );
-    }
 
-    // Draw points
-    for (int i = 0; i < pitches.length; i++) {
-      final x = px(i);
-      final y = py(pitches[i]);
-      final isOk = pitches[i] >= lcl && pitches[i] <= ucl;
-      
-      canvas.drawCircle(
-        Offset(x, y),
-        5,
-        Paint()..color = isOk ? AppTheme.passGreen : AppTheme.failRed,
-      );
-    }
-
-    // X-axis labels (piece names)
-    const labelStyle = TextStyle(fontSize: 9, color: AppTheme.textSecondary);
-    for (int i = 0; i < pitches.length; i++) {
-      final x = px(i);
-      final tp = TextPainter(
-        text: TextSpan(text: 'PIECE${i + 1}', style: labelStyle),
+      // Label X (PIECE i)
+      final xLabel = TextPainter(
+        text: TextSpan(
+          text: 'P${i + 1}',
+          style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+        ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(x - tp.width / 2, size.height - 15));
+      xLabel.paint(canvas, Offset(x - xLabel.width / 2, size.height - 12));
     }
   }
 
   void _drawDashedLine(Canvas canvas, Offset p1, Offset p2, Paint paint) {
-    const dashWidth = 5.0;
+    const dashWidth = 4.0;
     const dashSpace = 3.0;
     final dx = p2.dx - p1.dx;
     final dy = p2.dy - p1.dy;
@@ -1016,7 +826,7 @@ class _SpcChartPainter extends CustomPainter {
 
   void _drawLabel(Canvas canvas, String text, double x, double y, Color color) {
     final tp = TextPainter(
-      text: TextSpan(text: text, style: TextStyle(fontSize: 9, color: color)),
+      text: TextSpan(text: text, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, Offset(x, y));
@@ -1024,4 +834,38 @@ class _SpcChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _LegendItemText extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendItemText({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            border: Border.all(color: color, width: 1.5),
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppTheme.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
 }

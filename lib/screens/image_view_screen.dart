@@ -7,6 +7,7 @@ import '../models/inspection_result.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/gradient_border_box.dart';
 
 class ImageViewScreen extends ConsumerWidget {
   const ImageViewScreen({super.key});
@@ -21,12 +22,24 @@ class ImageViewScreen extends ConsumerWidget {
       return Scaffold(
         backgroundColor: AppTheme.bgLight,
         appBar: AppBar(
-          backgroundColor: AppTheme.bgWhite,
+          iconTheme: const IconThemeData(color: Colors.white),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryBlue.withValues(alpha: 0.9),
+                  AppTheme.failRed.withValues(alpha: 0.9),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+            ),
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Détails'),
+          title: const Text('Détails', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
         ),
         body: const Center(
           child: Text(
@@ -42,12 +55,24 @@ class ImageViewScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgWhite,
+        iconTheme: const IconThemeData(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryBlue.withValues(alpha: 0.9),
+                AppTheme.failRed.withValues(alpha: 0.9),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: Text(inspection.displayName),
+        title: Text(inspection.displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
         actions: [
           StatusBadge(status: inspection.verdict),
           const SizedBox(width: 12),
@@ -68,9 +93,7 @@ class ImageViewScreen extends ConsumerWidget {
                 children: [
                   _buildMainInfoCard(inspection),
                   const SizedBox(height: 16),
-                  _buildMeasurementsCard(inspection),
-                  const SizedBox(height: 16),
-                  _buildDefectsCard(inspection),
+                  _buildComprehensiveTableCard(inspection),
                   if (inspection.fingers.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildFingersCard(inspection),
@@ -147,13 +170,8 @@ class ImageViewScreen extends ConsumerWidget {
   }
 
   Widget _buildMainInfoCard(InspectionResult inspection) {
-    return Container(
+    return GradientBorderBox(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border, width: 0.5),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -201,58 +219,80 @@ class ImageViewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMeasurementsCard(InspectionResult inspection) {
-    return Container(
+  Widget _buildComprehensiveTableCard(InspectionResult inspection) {
+    return GradientBorderBox(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border, width: 0.5),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'MESURES',
+            'ANALYSE DÉTAILLÉE : TOLÉRANCES & RÉSULTATS',
             style: TextStyle(
-              fontSize: 10,
-              color: AppTheme.textSecondary,
+              fontSize: 11,
+              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.bold,
               letterSpacing: 0.08,
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
+          const SizedBox(height: 16),
+          Table(
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            border: const TableBorder(
+              horizontalInside: BorderSide(color: AppTheme.border, width: 0.5),
+            ),
+            columnWidths: const {
+              0: FlexColumnWidth(2),
+              1: FlexColumnWidth(1.5),
+              2: FlexColumnWidth(1.5),
+              3: FlexColumnWidth(0.5),
+            },
             children: [
-              Expanded(
-                child: _MeasureItem(
-                  label: 'Pitch moyen',
-                  value: '${inspection.pitchMeanMm.toStringAsFixed(3)} mm',
-                ),
+              TableRow(
+                decoration: const BoxDecoration(color: AppTheme.bgLight),
+                children: [
+                  _headerCell('Critère'),
+                  _headerCell('Tolérance attendue'),
+                  _headerCell('Résultat obtenu'),
+                  _headerCell(''),
+                ],
               ),
-              Expanded(
-                child: _MeasureItem(
-                  label: 'Largeur totale',
-                  value: '${inspection.totalWidthMm.toStringAsFixed(2)} mm',
-                  isOk: inspection.totalWidthOk,
-                ),
+              _buildTableRow(
+                'Pitch (Écart moyen)',
+                '2.500 ± 0.1 mm',
+                '${inspection.pitchMeanMm.toStringAsFixed(3)} mm',
+                (inspection.pitchMeanMm >= 2.400 && inspection.pitchMeanMm <= 2.600) || inspection.pitchMeanMm == 0.0,
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _MeasureItem(
-                  label: 'Nb doigts',
-                  value: '${inspection.nbFingers}',
-                ),
+              _buildTableRow(
+                'Largeur PCB',
+                '7.5 ± 0.1 mm',
+                '${inspection.totalWidthMm.toStringAsFixed(2)} mm',
+                (inspection.totalWidthMm >= 7.4 && inspection.totalWidthMm <= 7.6) || inspection.totalWidthMm == 0.0,
               ),
-              Expanded(
-                child: _MeasureItem(
-                  label: 'MPP',
-                  value: inspection.mpp.toStringAsFixed(3),
-                ),
+              _buildTableRow(
+                'Doigts détectés (Springs)',
+                '4',
+                '${inspection.nbFingers}',
+                inspection.nbFingers == 4,
               ),
+              _buildTableRow(
+                'Composants pliés',
+                '0',
+                '${inspection.nBent}',
+                inspection.nBent == 0,
+              ),
+              _buildTableRow(
+                'Composants manquants',
+                '0',
+                '${inspection.nMissing}',
+                inspection.nMissing == 0,
+              ),
+              if (inspection.nbAlertes > 0)
+                _buildTableRow(
+                  'Alertes (autres)',
+                  '0',
+                  '${inspection.nbAlertes}',
+                  false,
+                ),
             ],
           ),
         ],
@@ -260,132 +300,59 @@ class ImageViewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDefectsCard(InspectionResult inspection) {
-    final hasDefects = inspection.nMissing > 0 ||
-        inspection.nBent > 0 ||
-        inspection.nbAlertes > 0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: hasDefects
-            ? AppTheme.failRed.withValues(alpha: 0.05)
-            : AppTheme.passGreen.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: hasDefects
-              ? AppTheme.failRed.withValues(alpha: 0.2)
-              : AppTheme.passGreen.withValues(alpha: 0.2),
-          width: 0.5,
+  Widget _headerCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textSecondary,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'DÉFAUTS',
+    );
+  }
+
+  TableRow _buildTableRow(String label, String tolerance, String result, bool isPass) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Text(tolerance, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Text(
+            result, 
             style: TextStyle(
-              fontSize: 10,
-              color: hasDefects ? AppTheme.failRed : AppTheme.passGreen,
-              letterSpacing: 0.08,
+              fontSize: 12, 
+              fontWeight: FontWeight.bold,
+              color: isPass ? AppTheme.textPrimary : AppTheme.failRed,
+            )
+          ),
+        ),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Icon(
+              isPass ? Icons.check_circle : Icons.cancel,
+              color: isPass ? AppTheme.passGreen : AppTheme.failRed,
+              size: 16,
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _DefectItem(
-                  label: 'OK',
-                  value: inspection.nOk,
-                  color: AppTheme.passGreen,
-                ),
-              ),
-              Expanded(
-                child: _DefectItem(
-                  label: 'Manquants',
-                  value: inspection.nMissing,
-                  color: inspection.nMissing > 0
-                      ? AppTheme.failRed
-                      : AppTheme.textSecondary,
-                ),
-              ),
-              Expanded(
-                child: _DefectItem(
-                  label: 'Pliés',
-                  value: inspection.nBent,
-                  color: inspection.nBent > 0
-                      ? AppTheme.warnOrange
-                      : AppTheme.textSecondary,
-                ),
-              ),
-              Expanded(
-                child: _DefectItem(
-                  label: 'Alertes',
-                  value: inspection.nbAlertes,
-                  color: inspection.nbAlertes > 0
-                      ? AppTheme.warnOrange
-                      : AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          // Liste des défauts détaillés
-          if (inspection.defauts.isNotEmpty) ...[
-            const Divider(color: AppTheme.border, height: 20),
-            ...inspection.defauts.map((d) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.failRed.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Doigt ${d.fingerNum}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppTheme.failRed,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${d.typeDefaut}${d.description.isNotEmpty ? ' — ${d.description}' : ''}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ),
-                      if (d.ecartMm != 0)
-                        Text(
-                          '${d.ecartMm.toStringAsFixed(2)} mm',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                    ],
-                  ),
-                )),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildFingersCard(InspectionResult inspection) {
-    return Container(
+    return GradientBorderBox(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border, width: 0.5),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -417,13 +384,8 @@ class ImageViewScreen extends ConsumerWidget {
 
   Widget _buildOperatorCard(InspectionResult inspection) {
     final op = inspection.operator!;
-    return Container(
+    return GradientBorderBox(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border, width: 0.5),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -650,10 +612,20 @@ class _FingerRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              'pitch: ${finger.pitchMm.toStringAsFixed(3)}',
-              style:
-                  const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'pitch: ${finger.pitchMm.toStringAsFixed(3)} mm',
+                  style: const TextStyle(
+                      fontSize: 10, color: AppTheme.textSecondary),
+                ),
+                Text(
+                  'tilt: ${finger.tiltDeg.toStringAsFixed(1)}°',
+                  style: const TextStyle(
+                      fontSize: 10, color: AppTheme.textSecondary),
+                ),
+              ],
             ),
           ),
           if (finger.missing)

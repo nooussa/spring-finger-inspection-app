@@ -75,188 +75,267 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgLight,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo / Header
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: AppTheme.passGreen.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppTheme.passGreen.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.memory,
-                    size: 40,
-                    color: AppTheme.passGreen,
-                  ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primaryBlue.withValues(alpha: 0.7),
+              AppTheme.failRed.withValues(alpha: 0.7)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Card(
+                elevation: 12,
+                shadowColor: Colors.black45,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  'PCB Inspector',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Connexion opérateur',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Login field
-                TextField(
-                  controller: _loginCtrl,
-                  enabled: !_loading,
-                  style: const TextStyle(color: AppTheme.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Login',
-                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
-                    hintText: 'Entrez votre login',
-                    hintStyle: TextStyle(
-                        color: AppTheme.textSecondary.withValues(alpha: 0.5)),
-                    prefixIcon: const Icon(Icons.person_outline,
-                        color: AppTheme.textSecondary),
-                    filled: true,
-                    fillColor: AppTheme.bgWhite,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.passGreen),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Password field
-                TextField(
-                  controller: _passCtrl,
-                  enabled: !_loading,
-                  obscureText: true,
-                  style: const TextStyle(color: AppTheme.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Mot de passe',
-                    labelStyle: const TextStyle(color: AppTheme.textSecondary),
-                    hintText: 'Entrez votre mot de passe',
-                    hintStyle: TextStyle(
-                        color: AppTheme.textSecondary.withValues(alpha: 0.5)),
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: AppTheme.textSecondary),
-                    filled: true,
-                    fillColor: AppTheme.bgWhite,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.passGreen),
-                    ),
-                  ),
-                  onSubmitted: (_) => _tryLogin(),
-                ),
-                const SizedBox(height: 24),
-
-                // Error message
-                if (_error != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.failRed.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: AppTheme.failRed.withValues(alpha: 0.3),
-                          width: 0.5),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline,
-                            color: AppTheme.failRed, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _error!,
-                            style: const TextStyle(
-                                color: AppTheme.failRed, fontSize: 13),
+                color: AppTheme.bgWhite,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32.0, vertical: 40.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo / Header
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  AppTheme.primaryBlue.withValues(alpha: 0.4),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/logo.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                              Icons.image,
+                              color: AppTheme.primaryBlue,
+                              size: 40,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                if (_error != null) const SizedBox(height: 24),
-
-                // Login button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: FilledButton(
-                    onPressed: _loading ? null : _tryLogin,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.passGreen,
-                      foregroundColor: AppTheme.bgWhite,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    child: _loading
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppTheme.bgWhite,
+                      const SizedBox(height: 28),
+                      const Text(
+                        'Starz Quality',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Système de Contrôle Industriel',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 36),
+
+                      // Login field
+                      TextField(
+                        controller: _loginCtrl,
+                        enabled: !_loading,
+                        style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          labelText: 'Identifiant',
+                          labelStyle: const TextStyle(
+                              color: AppTheme.textSecondary, fontSize: 14),
+                          hintText: 'Entrez votre identifiant',
+                          hintStyle: TextStyle(
+                              color:
+                                  AppTheme.textSecondary.withValues(alpha: 0.5),
+                              fontSize: 14),
+                          prefixIcon: const Icon(Icons.person_outline,
+                              color: AppTheme.primaryBlue),
+                          filled: true,
+                          fillColor: AppTheme.bgLight,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide:
+                                const BorderSide(color: Colors.transparent),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide:
+                                const BorderSide(color: Colors.transparent),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                                color: AppTheme.primaryBlue, width: 1.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Password field
+                      TextField(
+                        controller: _passCtrl,
+                        enabled: !_loading,
+                        obscureText: true,
+                        style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          labelText: 'Mot de passe',
+                          labelStyle: const TextStyle(
+                              color: AppTheme.textSecondary, fontSize: 14),
+                          hintText: 'Entrez votre mot de passe',
+                          hintStyle: TextStyle(
+                              color:
+                                  AppTheme.textSecondary.withValues(alpha: 0.5),
+                              fontSize: 14),
+                          prefixIcon: const Icon(Icons.lock_outline,
+                              color: AppTheme.failRed),
+                          filled: true,
+                          fillColor: AppTheme.bgLight,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide:
+                                const BorderSide(color: Colors.transparent),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide:
+                                const BorderSide(color: Colors.transparent),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                                color: AppTheme.failRed, width: 1.5),
+                          ),
+                        ),
+                        onSubmitted: (_) => _tryLogin(),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Error message
+                      if (_error != null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.failRed.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: AppTheme.failRed.withValues(alpha: 0.3),
+                                width: 0.5),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: AppTheme.failRed, size: 20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _error!,
+                                  style: const TextStyle(
+                                      color: AppTheme.failRed,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (_error != null) const SizedBox(height: 24),
+
+                      // Login button with Gradient
+                      Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.primaryBlue.withValues(alpha: 0.9),
+                              AppTheme.failRed.withValues(alpha: 0.9)
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  AppTheme.primaryBlue.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
                             ),
-                          )
-                        : const Text(
-                            'CONNEXION',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _loading ? null : _tryLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'SE CONNECTER',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
 
-                // Settings link
-                TextButton.icon(
-                  onPressed: () => context.push('/settings'),
-                  icon: const Icon(Icons.settings_outlined, size: 16),
-                  label: const Text('Configurer le serveur'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.textSecondary,
+                      // Settings link
+                      TextButton.icon(
+                        onPressed: () => context.push('/settings'),
+                        icon: const Icon(Icons.settings_outlined, size: 18),
+                        label: const Text('Configuration Serveur'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.textSecondary,
+                          textStyle: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),

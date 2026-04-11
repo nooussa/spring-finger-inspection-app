@@ -45,7 +45,7 @@ class OperatorUser {
 
 /// Service API pour communiquer avec le backend FastAPI
 class ApiService {
-  static const String _defaultBaseUrl = 'http://192.168.1.50:8000';
+  static const String _defaultBaseUrl = 'http://localhost:8000';
   static const String _baseUrlKey = 'api_base_url';
 
   String _baseUrl = _defaultBaseUrl;

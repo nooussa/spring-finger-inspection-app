@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../theme.dart';
 import '../providers/inspection_provider.dart';
 import '../widgets/feed_item.dart';
+import '../widgets/gradient_border_box.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -19,22 +20,34 @@ class HistoryScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgWhite,
+        iconTheme: const IconThemeData(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryBlue.withValues(alpha: 0.9),
+                AppTheme.failRed.withValues(alpha: 0.9),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
         title: Row(
           children: [
-            const Text('Historique'),
+            const Text('Historique', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppTheme.bgLight,
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '$totalCount',
                 style: const TextStyle(
                   fontSize: 12,
-                  color: AppTheme.textSecondary,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -42,8 +55,7 @@ class HistoryScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: AppTheme.textSecondary),
+            icon: const Icon(Icons.settings_outlined, color: Colors.white),
             onPressed: () => context.push('/settings'),
           ),
         ],
@@ -223,25 +235,14 @@ class _FilterChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: GradientBorderBox(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected
-              ? (color?.withValues(alpha: 0.15) ?? AppTheme.bgLight)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color:
-                selected ? chipColor.withValues(alpha: 0.4) : AppTheme.border,
-            width: 0.5,
-          ),
-        ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             color: selected ? chipColor : AppTheme.textSecondary,
-            fontWeight: selected ? FontWeight.w500 : FontWeight.normal,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.bold,
           ),
         ),
       ),

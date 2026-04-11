@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../models/inspection_result.dart';
 import '../theme.dart';
+import 'gradient_border_box.dart';
 
 /// Widget de ligne pour le flux d'inspections.
 /// Affiche: badge PASS/FAIL, piece_code ou ID, pitch_mean_mm, timestamp.

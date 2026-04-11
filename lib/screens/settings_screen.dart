@@ -89,12 +89,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.bgWhite,
+        iconTheme: const IconThemeData(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryBlue.withValues(alpha: 0.9),
+                AppTheme.failRed.withValues(alpha: 0.9),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Paramètres'),
+        title: const Text('Paramètres', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -166,7 +178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: AppTheme.textPrimary,
             ),
             decoration: InputDecoration(
-              hintText: 'http://192.168.1.50:8000',
+              hintText: 'http://localhost:8000',
               hintStyle: TextStyle(
                 color: AppTheme.textSecondary.withValues(alpha: 0.5),
               ),
