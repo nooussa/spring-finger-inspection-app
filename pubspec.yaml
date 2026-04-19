@@ -22,6 +22,9 @@ dependencies:
   # Config persistante (IP serveur, seuils)
   shared_preferences: ^2.2.3
 
+  # WebSocket temps réel Flutter <-> FastAPI
+  web_socket_channel: ^3.0.1
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

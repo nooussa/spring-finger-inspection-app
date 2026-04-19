@@ -3,19 +3,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/inspection_result.dart';
 import '../services/inspection_db_service.dart';
+import '../services/websocket_service.dart';
+import '../services/api_service.dart';
 
-/// Provider qui poll /inspections/latest toutes les 5 secondes
+/// Provider live via WebSocket (/ws/live)
 final inspectionListProvider =
     StreamProvider<List<InspectionResult>>((ref) async* {
-  final dbService = ref.watch(inspectionDbServiceProvider);
+  final wsService = ref.watch(webSocketServiceProvider);
+  final token = ref.watch(authTokenProvider);
 
-  await for (final inspections in dbService.pollLatest(
-    interval: const Duration(seconds: 5),
-    n: 20,
-  )) {
+  await for (final payload in wsService.stream(token: token)) {
     // Mettre à jour le timestamp du dernier fetch réussi
     ref.read(lastFetchTimeProvider.notifier).state = DateTime.now();
-    yield inspections;
+    yield payload.inspections;
   }
 });
 
@@ -35,12 +35,12 @@ final inspectionHistoryProvider =
 
 /// Provider des stats (poll toutes les 10 secondes)
 final statsProvider = StreamProvider<Map<String, dynamic>>((ref) async* {
-  final dbService = ref.watch(inspectionDbServiceProvider);
+  final wsService = ref.watch(webSocketServiceProvider);
+  final token = ref.watch(authTokenProvider);
 
-  await for (final stats in dbService.pollStats(
-    interval: const Duration(seconds: 10),
-  )) {
-    yield stats;
+  await for (final payload in wsService.stream(token: token)) {
+    ref.read(lastFetchTimeProvider.notifier).state = DateTime.now();
+    yield payload.stats;
   }
 });
 

@@ -83,7 +83,6 @@ class _Shell extends ConsumerWidget {
                   isSelected: idx == 1,
                   onTap: () => context.go('/spc'),
                 ),
-
                 _NavItem(
                   icon: Icons.videocam_outlined,
                   selectedIcon: Icons.videocam,

@@ -212,6 +212,25 @@ class ApiService {
   /// URL du flux caméra live
   String get cameraStreamUrl => '$_baseUrl/camera/live';
 
+  /// URL WebSocket live
+  String get webSocketLiveUrl {
+    final baseUri = Uri.parse(_baseUrl);
+    final scheme = baseUri.scheme == 'https' ? 'wss' : 'ws';
+
+    final normalizedPath = baseUri.path.endsWith('/')
+        ? baseUri.path.substring(0, baseUri.path.length - 1)
+        : baseUri.path;
+    final wsPath =
+        normalizedPath.isEmpty ? '/ws/live' : '$normalizedPath/ws/live';
+
+    return Uri(
+      scheme: scheme,
+      host: baseUri.host,
+      port: baseUri.hasPort ? baseUri.port : null,
+      path: wsPath,
+    ).toString();
+  }
+
   void dispose() {
     _client.close();
   }

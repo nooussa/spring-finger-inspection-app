@@ -106,7 +106,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Paramètres', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        title: const Text('Paramètres',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -168,6 +169,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             style: TextStyle(
               fontSize: 12,
               color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'PC local: http://127.0.0.1:8000  |  Android émulateur: http://10.0.2.2:8000  |  Téléphone: http://IP_DU_PC:8000',
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+              height: 1.4,
             ),
           ),
           const SizedBox(height: 8),
