@@ -14,77 +14,112 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  late TextEditingController _urlController;
-  bool _testing = false;
-  String? _testResult;
-  bool _testSuccess = false;
-  Map<String, dynamic>? _healthData;
+  late final TextEditingController _currentCtrl;
+  late final TextEditingController _newCtrl;
+  late final TextEditingController _confirmCtrl;
+  bool _changing = false;
+  String? _changeMessage;
+  bool _changeSuccess = false;
 
   @override
   void initState() {
     super.initState();
-    final apiService = ref.read(apiServiceProvider);
-    _urlController = TextEditingController(text: apiService.baseUrl);
+    _currentCtrl = TextEditingController();
+    _newCtrl = TextEditingController();
+    _confirmCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
-    _urlController.dispose();
+    _currentCtrl.dispose();
+    _newCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _saveUrl() async {
-    final apiService = ref.read(apiServiceProvider);
-    await apiService.setBaseUrl(_urlController.text);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('URL sauvegardée'),
-          backgroundColor: AppTheme.passGreen,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
+  Future<void> _changePassword() async {
+    final current = _currentCtrl.text;
+    final next = _newCtrl.text;
+    final confirm = _confirmCtrl.text;
 
-  Future<void> _testConnection() async {
+    if (current.isEmpty || next.isEmpty || confirm.isEmpty) {
+      setState(() {
+        _changeSuccess = false;
+        _changeMessage = 'Tous les champs sont requis';
+      });
+      return;
+    }
+
+    if (next != confirm) {
+      setState(() {
+        _changeSuccess = false;
+        _changeMessage = 'Les mots de passe ne correspondent pas';
+      });
+      return;
+    }
+
+    final token = ref.read(authTokenProvider);
+    if (token == null) {
+      setState(() {
+        _changeSuccess = false;
+        _changeMessage = 'Utilisateur non connecté';
+      });
+      return;
+    }
+
     setState(() {
-      _testing = true;
-      _testResult = null;
-      _healthData = null;
+      _changing = true;
+      _changeMessage = null;
     });
 
-    final apiService = ref.read(apiServiceProvider);
-    // Sauvegarder d'abord l'URL
-    await apiService.setBaseUrl(_urlController.text);
-
     try {
-      final health = await apiService.checkHealth();
+      final api = ref.read(apiServiceProvider);
+      await api.changePassword(
+        token: token,
+        currentPassword: current,
+        newPassword: next,
+      );
+
+      if (!mounted) return;
+      _currentCtrl.clear();
+      _newCtrl.clear();
+      _confirmCtrl.clear();
+
       setState(() {
-        _testing = false;
-        _testSuccess = true;
-        _testResult = 'Connexion réussie!';
-        _healthData = health;
+        _changing = false;
+        _changeSuccess = true;
+        _changeMessage = 'Mot de passe mis à jour';
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _changing = false;
+        _changeSuccess = false;
+        _changeMessage = e.message;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _testing = false;
-        _testSuccess = false;
-        _testResult = 'Échec: $e';
-        _healthData = null;
+        _changing = false;
+        _changeSuccess = false;
+        _changeMessage = 'Erreur réseau';
       });
     }
   }
 
-  void _logout() {
+  Future<void> _logout() async {
+    final api = ref.read(apiServiceProvider);
+    await api.clearAuth();
     ref.read(authTokenProvider.notifier).state = null;
     ref.read(authUserProvider.notifier).state = null;
-    context.go('/login');
+    if (mounted) {
+      context.go('/login');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final apiService = ref.watch(apiServiceProvider);
+    final user = ref.watch(authUserProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
@@ -106,7 +141,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Paramètres',
+        title: const Text('Compte',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(
@@ -114,27 +149,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section serveur
-            _buildSectionTitle('SERVEUR API'),
+            _buildSectionTitle('INFORMATIONS COMPTE'),
             const SizedBox(height: 12),
-            _buildServerCard(apiService),
+            _buildAccountCard(user),
             const SizedBox(height: 24),
-
-            // Section infos DB
-            if (_healthData != null) ...[
-              _buildSectionTitle('BASE DE DONNÉES'),
-              const SizedBox(height: 12),
-              _buildDbInfoCard(),
-              const SizedBox(height: 24),
-            ],
-
-            // Section à propos
-            _buildSectionTitle('À PROPOS'),
+            _buildSectionTitle('SÉCURITÉ'),
             const SizedBox(height: 12),
-            _buildAboutCard(),
+            _buildPasswordCard(),
             const SizedBox(height: 24),
-
-            // Bouton déconnexion
             _buildLogoutButton(),
           ],
         ),
@@ -153,7 +175,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildServerCard(ApiService apiService) {
+  Widget _buildAccountCard(OperatorUser? user) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -162,101 +184,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'URL du serveur',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'PC local: http://127.0.0.1:8000  |  Android émulateur: http://10.0.2.2:8000  |  Téléphone: http://IP_DU_PC:8000',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppTheme.textSecondary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 8),
+          _InfoRow(
+              label: 'Nom', value: user?.displayName ?? user?.login ?? '—'),
+          const Divider(color: AppTheme.border, height: 20),
+          _InfoRow(label: 'Identifiant', value: user?.login ?? '—'),
+          const Divider(color: AppTheme.border, height: 20),
+          _InfoRow(label: 'Rôle', value: user?.role ?? '—'),
+          const Divider(color: AppTheme.border, height: 20),
+          _InfoRow(label: 'Matricule', value: user?.employeeId ?? '—'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.bgWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.border, width: 0.5),
+      ),
+      child: Column(
+        children: [
           TextField(
-            controller: _urlController,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppTheme.textPrimary,
+            controller: _currentCtrl,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Mot de passe actuel',
             ),
-            decoration: InputDecoration(
-              hintText: 'http://localhost:8000',
-              hintStyle: TextStyle(
-                color: AppTheme.textSecondary.withValues(alpha: 0.5),
-              ),
-              filled: true,
-              fillColor: AppTheme.bgWhite,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppTheme.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppTheme.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppTheme.passGreen),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            ),
-            onSubmitted: (_) => _saveUrl(),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _saveUrl,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.textPrimary,
-                    side: const BorderSide(color: AppTheme.border),
-                  ),
-                  child: const Text('Sauvegarder'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _testing ? null : _testConnection,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.passGreen,
-                    foregroundColor: AppTheme.bgWhite,
-                  ),
-                  child: _testing
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppTheme.bgWhite,
-                          ),
-                        )
-                      : const Text('Tester'),
-                ),
-              ),
-            ],
+          TextField(
+            controller: _newCtrl,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Nouveau mot de passe',
+            ),
           ),
-          if (_testResult != null) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _confirmCtrl,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Confirmer le nouveau mot de passe',
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _changing ? null : _changePassword,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+                foregroundColor: Colors.white,
+              ),
+              child: _changing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Mettre à jour'),
+            ),
+          ),
+          if (_changeMessage != null) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _testSuccess
+                color: _changeSuccess
                     ? AppTheme.passGreen.withValues(alpha: 0.1)
                     : AppTheme.failRed.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _testSuccess
+                  color: _changeSuccess
                       ? AppTheme.passGreen.withValues(alpha: 0.3)
                       : AppTheme.failRed.withValues(alpha: 0.3),
                   width: 0.5,
@@ -265,17 +271,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Row(
                 children: [
                   Icon(
-                    _testSuccess ? Icons.check_circle : Icons.error,
-                    color: _testSuccess ? AppTheme.passGreen : AppTheme.failRed,
+                    _changeSuccess ? Icons.check_circle : Icons.error,
+                    color:
+                        _changeSuccess ? AppTheme.passGreen : AppTheme.failRed,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _testResult!,
+                      _changeMessage!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: _testSuccess
+                        color: _changeSuccess
                             ? AppTheme.passGreen
                             : AppTheme.failRed,
                       ),
@@ -290,133 +297,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildDbInfoCard() {
-    final dbName =
-        _healthData?['database'] ?? _healthData?['db_name'] ?? 'pcb_quality';
-    final status = _healthData?['status'] ?? 'connected';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border, width: 0.5),
-      ),
-      child: Column(
-        children: [
-          _InfoRow(label: 'Base de données', value: dbName.toString()),
-          const Divider(color: AppTheme.border, height: 20),
-          _InfoRow(
-            label: 'Statut',
-            value: status.toString().toUpperCase(),
-            valueColor: status == 'connected' || status == 'ok'
-                ? AppTheme.passGreen
-                : AppTheme.failRed,
-          ),
-          if (_healthData?['version'] != null) ...[
-            const Divider(color: AppTheme.border, height: 20),
-            _InfoRow(
-                label: 'Version API',
-                value: _healthData!['version'].toString()),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAboutCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border, width: 0.5),
-      ),
-      child: const Column(
-        children: [
-          _InfoRow(label: 'Application', value: 'PCB Inspector'),
-          Divider(color: AppTheme.border, height: 20),
-          _InfoRow(label: 'Version', value: '1.0.0'),
-          Divider(color: AppTheme.border, height: 20),
-          _InfoRow(label: 'Projet', value: 'Contrôle Qualité PCB'),
-          Divider(color: AppTheme.border, height: 20),
-          _InfoRow(label: 'Technologie', value: 'Flutter + FastAPI'),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLogoutButton() {
-    final user = ref.watch(authUserProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (user != null) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.bgWhite,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.border, width: 0.5),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppTheme.passGreen.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: AppTheme.passGreen,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.displayName ?? user.login,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        user.role ?? 'Opérateur',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, size: 18),
-            label: const Text('Se déconnecter'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.failRed,
-              side: const BorderSide(color: AppTheme.failRed),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _logout,
+        icon: const Icon(Icons.logout, size: 18),
+        label: const Text('Se déconnecter'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppTheme.failRed,
+          side: const BorderSide(color: AppTheme.failRed),
+          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-      ],
+      ),
     );
   }
 }
@@ -424,12 +317,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-  final Color? valueColor;
 
   const _InfoRow({
     required this.label,
     required this.value,
-    this.valueColor,
   });
 
   @override
@@ -446,10 +337,10 @@ class _InfoRow extends StatelessWidget {
         ),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: valueColor ?? AppTheme.textPrimary,
+            color: AppTheme.textPrimary,
           ),
         ),
       ],

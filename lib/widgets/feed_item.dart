@@ -3,18 +3,19 @@
 import 'package:flutter/material.dart';
 import '../models/inspection_result.dart';
 import '../theme.dart';
-import 'gradient_border_box.dart';
 
 /// Widget de ligne pour le flux d'inspections.
 /// Affiche: badge PASS/FAIL, piece_code ou ID, pitch_mean_mm, timestamp.
 class FeedItem extends StatelessWidget {
   final InspectionResult inspection;
   final VoidCallback? onTap;
+  final String? imageUrl;
 
   const FeedItem({
     super.key,
     required this.inspection,
     this.onTap,
+    this.imageUrl,
   });
 
   @override
@@ -38,6 +39,29 @@ class FeedItem extends StatelessWidget {
         ),
         child: Row(
           children: [
+            if (imageUrl != null && imageUrl!.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 38,
+                  height: 38,
+                  child: Image.network(
+                    imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: AppTheme.bgLight,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.image_outlined,
+                        size: 18,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             // Badge PASS/FAIL
             Container(
               width: 44,

@@ -3,10 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'services/api_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/spc_screen.dart';
 import 'screens/camera_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/admin_panel_screen.dart';
 import 'screens/image_view_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/login_screen.dart';
@@ -15,6 +17,7 @@ import 'theme.dart';
 final appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
+    // server configuration screen removed from mobile flow
     GoRoute(
       path: '/login',
       builder: (c, s) => const LoginScreen(),
@@ -35,6 +38,12 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (c, s) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/admin',
+      builder: (c, s) => AdminPanelGate(
+        initialUser: s.extra is OperatorUser ? s.extra as OperatorUser : null,
+      ),
     ),
   ],
 );

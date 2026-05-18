@@ -7,6 +7,8 @@ class InspectionResult {
   final DateTime timestamp;
   final String verdict; // 'PASS' | 'FAIL'
   final int nbFingers;
+  final List<double> pitchesMm;
+  final List<bool> pitchesOk;
   final double pitchMeanMm;
   final double totalWidthMm;
   final bool totalWidthOk;
@@ -15,6 +17,8 @@ class InspectionResult {
   final int nBent;
   final double mpp;
   final int nbAlertes;
+  final List<String> causes;
+  final List<String> alerts;
   final InspectionPiece? piece;
   final InspectionOperator? operator;
   final List<FingerData> fingers;
@@ -27,6 +31,8 @@ class InspectionResult {
     required this.timestamp,
     required this.verdict,
     this.nbFingers = 0,
+    this.pitchesMm = const [],
+    this.pitchesOk = const [],
     this.pitchMeanMm = 0.0,
     this.totalWidthMm = 0.0,
     this.totalWidthOk = true,
@@ -35,6 +41,8 @@ class InspectionResult {
     this.nBent = 0,
     this.mpp = 0.0,
     this.nbAlertes = 0,
+    this.causes = const [],
+    this.alerts = const [],
     this.piece,
     this.operator,
     this.fingers = const [],
@@ -67,19 +75,123 @@ class InspectionResult {
       return DateTime.now();
     }
 
+    double? parseDouble(dynamic value) {
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
+    List<double> parseDoubleList(dynamic value) {
+      if (value is List) {
+        return value.map(parseDouble).whereType<double>().toList();
+      }
+      return [];
+    }
+
+    int? parseInt(dynamic value) {
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
+    bool? parseBool(dynamic value) {
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      if (value is String) {
+        final normalized = value.trim().toLowerCase();
+        if (normalized == 'true' || normalized == 'yes') return true;
+        if (normalized == 'false' || normalized == 'no') return false;
+      }
+      return null;
+    }
+
+    List<bool> parseBoolList(dynamic value) {
+      if (value is List) {
+        return value.map(parseBool).whereType<bool>().toList();
+      }
+      return [];
+    }
+
+    List<String> parseStringList(dynamic value) {
+      if (value is List) {
+        return value
+            .map((v) => v?.toString())
+            .whereType<String>()
+            .where((v) => v.trim().isNotEmpty)
+            .toList();
+      }
+      return [];
+    }
+
+    final mesures = json['mesures'] is Map<String, dynamic>
+        ? json['mesures'] as Map<String, dynamic>
+        : <String, dynamic>{};
+    final qualityReport = json['quality_report'] is Map<String, dynamic>
+        ? json['quality_report'] as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    var pitchesMm = parseDoubleList(
+      json['pitches_mm'] ?? mesures['pitches_mm'],
+    );
+    var pitchesOk = parseBoolList(
+      json['pitches_ok'] ?? mesures['pitches_ok'],
+    );
+    final alerts = parseStringList(
+      json['alertes'] ??
+          json['alerts'] ??
+          qualityReport['alertes'] ??
+          qualityReport['alerts'],
+    );
+    final causes = parseStringList(
+      json['causes'] ?? json['raisons'] ?? json['reasons'],
+    );
+
+    if (pitchesMm.isEmpty) {
+      final criteres = qualityReport['criteres'];
+      if (criteres is Map<String, dynamic>) {
+        final pitchCrit = criteres['pitches'];
+        if (pitchCrit is Map<String, dynamic> && pitchCrit['details'] is List) {
+          final details = pitchCrit['details'] as List;
+          pitchesMm = details
+              .map((d) => d is Map<String, dynamic>
+                  ? parseDouble(d['valeur_mm'])
+                  : null)
+              .whereType<double>()
+              .toList();
+          if (pitchesOk.isEmpty) {
+            pitchesOk = details
+                .map((d) =>
+                    d is Map<String, dynamic> ? parseBool(d['ok']) : null)
+                .whereType<bool>()
+                .toList();
+          }
+        }
+      }
+    }
+
     return InspectionResult(
       id: extractId(json),
       timestamp: parseTimestamp(json['timestamp']),
       verdict: json['verdict']?.toString() ?? 'FAIL',
-      nbFingers: (json['nb_fingers'] as num?)?.toInt() ?? 0,
-      pitchMeanMm: (json['pitch_mean_mm'] as num?)?.toDouble() ?? 0.0,
-      totalWidthMm: (json['total_width_mm'] as num?)?.toDouble() ?? 0.0,
-      totalWidthOk: json['total_width_ok'] as bool? ?? true,
-      nOk: (json['n_ok'] as num?)?.toInt() ?? 0,
-      nMissing: (json['n_missing'] as num?)?.toInt() ?? 0,
-      nBent: (json['n_bent'] as num?)?.toInt() ?? 0,
-      mpp: (json['mpp'] as num?)?.toDouble() ?? 0.0,
-      nbAlertes: (json['nb_alertes'] as num?)?.toInt() ?? 0,
+      nbFingers: parseInt(json['nb_fingers']) ?? 0,
+      pitchesMm: pitchesMm,
+      pitchesOk: pitchesOk,
+      pitchMeanMm: parseDouble(json['pitch_mean_mm']) ??
+          parseDouble(mesures['pitch_mean_mm']) ??
+          0.0,
+      totalWidthMm: parseDouble(json['total_width_mm']) ??
+          parseDouble(mesures['total_width_mm']) ??
+          0.0,
+      totalWidthOk: parseBool(json['total_width_ok']) ??
+          parseBool(mesures['total_width_ok']) ??
+          true,
+      nOk: parseInt(json['n_ok']) ?? 0,
+      nMissing: parseInt(json['n_missing']) ?? 0,
+      nBent: parseInt(json['n_bent']) ?? 0,
+      mpp: parseDouble(json['mpp']) ?? parseDouble(mesures['mpp']) ?? 0.0,
+      nbAlertes: parseInt(json['nb_alertes']) ?? 0,
+      causes: causes,
+      alerts: alerts,
       piece: json['piece'] != null
           ? InspectionPiece.fromJson(json['piece'] as Map<String, dynamic>)
           : null,

@@ -25,6 +25,9 @@ dependencies:
   # WebSocket temps réel Flutter <-> FastAPI
   web_socket_channel: ^3.0.1
 
+  # Image picker for gallery import
+  image_picker: ^1.0.0
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

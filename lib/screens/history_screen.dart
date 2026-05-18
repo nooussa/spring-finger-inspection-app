@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme.dart';
 import '../providers/inspection_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/feed_item.dart';
 import '../widgets/gradient_border_box.dart';
 
@@ -16,6 +17,7 @@ class HistoryScreen extends ConsumerWidget {
     final filter = ref.watch(inspectionFilterProvider);
     final filteredAsync = ref.watch(filteredInspectionsProvider);
     final totalCount = ref.watch(totalCountProvider);
+    final apiService = ref.watch(apiServiceProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
@@ -83,8 +85,13 @@ class HistoryScreen extends ConsumerWidget {
                     itemCount: inspections.length,
                     itemBuilder: (context, index) {
                       final inspection = inspections[index];
+                      final imageUrl = inspection.imagePath == null ||
+                              inspection.imagePath!.isEmpty
+                          ? null
+                          : '${apiService.baseUrl}/images/${inspection.imagePath}';
                       return FeedItem(
                         inspection: inspection,
+                        imageUrl: imageUrl,
                         onTap: () => context.push('/image', extra: inspection),
                       );
                     },

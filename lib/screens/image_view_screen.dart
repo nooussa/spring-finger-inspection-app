@@ -39,7 +39,9 @@ class ImageViewScreen extends ConsumerWidget {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Détails', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          title: const Text('Détails',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
         ),
         body: const Center(
           child: Text(
@@ -72,7 +74,9 @@ class ImageViewScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: Text(inspection.displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        title: Text(inspection.displayName,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600)),
         actions: [
           StatusBadge(status: inspection.verdict),
           const SizedBox(width: 12),
@@ -260,13 +264,17 @@ class ImageViewScreen extends ConsumerWidget {
                 'Pitch (Écart moyen)',
                 '2.500 ± 0.1 mm',
                 '${inspection.pitchMeanMm.toStringAsFixed(3)} mm',
-                (inspection.pitchMeanMm >= 2.400 && inspection.pitchMeanMm <= 2.600) || inspection.pitchMeanMm == 0.0,
+                (inspection.pitchMeanMm >= 2.400 &&
+                        inspection.pitchMeanMm <= 2.600) ||
+                    inspection.pitchMeanMm == 0.0,
               ),
               _buildTableRow(
                 'Largeur PCB',
                 '7.5 ± 0.1 mm',
                 '${inspection.totalWidthMm.toStringAsFixed(2)} mm',
-                (inspection.totalWidthMm >= 7.4 && inspection.totalWidthMm <= 7.6) || inspection.totalWidthMm == 0.0,
+                (inspection.totalWidthMm >= 7.4 &&
+                        inspection.totalWidthMm <= 7.6) ||
+                    inspection.totalWidthMm == 0.0,
               ),
               _buildTableRow(
                 'Doigts détectés (Springs)',
@@ -314,27 +322,32 @@ class ImageViewScreen extends ConsumerWidget {
     );
   }
 
-  TableRow _buildTableRow(String label, String tolerance, String result, bool isPass) {
+  TableRow _buildTableRow(
+      String label, String tolerance, String result, bool isPass) {
     return TableRow(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+          child: Text(label,
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary)),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          child: Text(tolerance, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+          child: Text(tolerance,
+              style:
+                  const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          child: Text(
-            result, 
-            style: TextStyle(
-              fontSize: 12, 
-              fontWeight: FontWeight.bold,
-              color: isPass ? AppTheme.textPrimary : AppTheme.failRed,
-            )
-          ),
+          child: Text(result,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isPass ? AppTheme.textPrimary : AppTheme.failRed,
+              )),
         ),
         Center(
           child: Padding(
@@ -484,88 +497,6 @@ class _InfoRow extends StatelessWidget {
             ),
             textAlign: TextAlign.end,
             overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MeasureItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool? isOk;
-
-  const _MeasureItem({
-    required this.label,
-    required this.value,
-    this.isOk,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            if (isOk != null) ...[
-              const SizedBox(width: 4),
-              Icon(
-                isOk! ? Icons.check_circle : Icons.cancel,
-                size: 14,
-                color: isOk! ? AppTheme.passGreen : AppTheme.failRed,
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _DefectItem extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color color;
-
-  const _DefectItem({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          '$value',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppTheme.textSecondary,
           ),
         ),
       ],

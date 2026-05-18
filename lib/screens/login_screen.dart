@@ -18,12 +18,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   late final TextEditingController _passCtrl;
   bool _loading = false;
   String? _error;
+  bool _checkingSession = true;
 
   @override
   void initState() {
     super.initState();
     _loginCtrl = TextEditingController();
     _passCtrl = TextEditingController();
+    _restoreSession();
   }
 
   @override
@@ -46,6 +48,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final api = ref.read(apiServiceProvider);
+      final readyUrl = await api.ensureBaseUrl();
+      if (!mounted) return;
+      if (readyUrl == null) {
+        setState(() {
+          _checkingSession = false;
+          _error = 'Serveur non configuré. Contactez l\'administrateur.';
+        });
+        return;
+      }
       final (token, user) = await api.login(
         login: _loginCtrl.text,
         password: _passCtrl.text,
@@ -56,15 +67,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Stocker le token et l'utilisateur dans Riverpod
       ref.read(authTokenProvider.notifier).state = token;
       ref.read(authUserProvider.notifier).state = user;
+      await api.saveAuth(token: token, user: user);
 
+      if (!mounted) return;
       // Naviguer vers le dashboard
       context.go('/');
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.message);
+      setState(() {
+        _error = e.message.contains('Serveur non accessible')
+            ? 'Serveur non configuré. Contactez l\'administrateur.'
+            : e.message;
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Serveur non accessible');
+      setState(() {
+        _error = 'Serveur non configuré. Contactez l\'administrateur.';
+      });
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -72,8 +91,75 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _restoreSession() async {
+    final api = ref.read(apiServiceProvider);
+    await api.init();
+
+    final readyUrl = await api.ensureBaseUrl();
+    if (!mounted) return;
+    if (readyUrl == null) {
+      setState(() {
+        _checkingSession = false;
+      });
+      return;
+    }
+
+    // Si l'URL est locale, tenter une détection automatique
+    final (token, user) = await api.loadAuth();
+    if (token != null) {
+      final ok = await api.testConnection(api.baseUrl);
+      if (!mounted) return;
+      if (ok) {
+        ref.read(authTokenProvider.notifier).state = token;
+        ref.read(authUserProvider.notifier).state = user;
+        context.go('/');
+        return;
+      }
+      await api.clearAuth();
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted) {
+      setState(() {
+        _checkingSession = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_checkingSession) {
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryBlue.withValues(alpha: 0.7),
+                AppTheme.failRed.withValues(alpha: 0.7)
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: const SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 12),
+                  Text(
+                    'Connexion en cours...',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -321,17 +407,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Settings link
-                      TextButton.icon(
-                        onPressed: () => context.push('/settings'),
-                        icon: const Icon(Icons.settings_outlined, size: 18),
-                        label: const Text('Configuration Serveur'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppTheme.textSecondary,
-                          textStyle: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w500),
-                        ),
-                      ),
+                      // server configuration removed from mobile UI
+                      const SizedBox.shrink(),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
