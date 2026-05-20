@@ -270,6 +270,42 @@ class ApiService {
     throw const ApiException('Impossible de se connecter au serveur');
   }
 
+  /// Create an operator account using employee ID
+  /// POST /auth/create-account { emp_id, login, password }
+  Future<OperatorUser> createAccount({
+    required String empId,
+    required String login,
+    required String password,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$_baseUrl/auth/create-account'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'emp_id': empId,
+              'login': login,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final msg = response.body.trim();
+        throw ApiException(msg.isNotEmpty
+            ? msg
+            : 'Erreur ${response.statusCode}: ${response.reasonPhrase}');
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      // The backend returns the operator without password_hash
+      return OperatorUser.fromJson(data);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Erreur réseau: $e');
+    }
+  }
+
   /// Récupère les N dernières inspections
   /// GET /inspections/latest?n=n
   Future<List<InspectionResult>> getLatestInspections({int n = 20}) async {
@@ -316,6 +352,82 @@ class ApiService {
     required String token,
   }) async {
     return _getAdminList('/admin/employees', token);
+  }
+
+  /// Get a single employee by id (public endpoint)
+  Future<Map<String, dynamic>> getEmployee({
+    required String empId,
+  }) async {
+    try {
+      final response = await _client
+          .get(Uri.parse('$_baseUrl/employees/${Uri.encodeComponent(empId)}'))
+          .timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) return data;
+        throw const ApiException('Format de réponse invalide');
+      }
+      if (response.statusCode == 404) throw ApiException('Employé introuvable');
+      throw ApiException('Erreur ${response.statusCode}: ${response.reasonPhrase}');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Erreur réseau: $e');
+    }
+  }
+
+  /// Check if any employee exists on the server (used for first-run setup)
+  Future<bool> hasAnyEmployee() async {
+    try {
+      final response = await _client
+          .get(Uri.parse('$_baseUrl/setup/status'))
+          .timeout(const Duration(seconds: 6));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['has_any_employee'] == true;
+      }
+      throw const ApiException('Erreur lecture setup status');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Erreur réseau: $e');
+    }
+  }
+
+  /// Create the very first employee without auth (setup flow only)
+  Future<Map<String, dynamic>> createFirstEmployee({
+    required String empId,
+    required String name,
+    required String poste,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$_baseUrl/setup/first-employee'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'emp_id': empId,
+              'name': name,
+              'poste': poste,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final msg = response.body.trim();
+        throw ApiException(msg.isNotEmpty
+            ? msg
+            : 'Erreur ${response.statusCode}: ${response.reasonPhrase}');
+      }
+
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      throw const ApiException('Format de réponse invalide');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Erreur réseau: $e');
+    }
   }
 
   Future<List<Map<String, dynamic>>> _getAdminList(
@@ -552,6 +664,9 @@ class ApiService {
 
   /// URL du flux caméra live
   String get cameraStreamUrl => '$_baseUrl/camera/live';
+
+  /// URL d'une image caméra unique (plus fiable pour mobile)
+  String get cameraFrameUrl => '$_baseUrl/camera/frame';
 
   /// URL WebSocket live
   String get webSocketLiveUrl {

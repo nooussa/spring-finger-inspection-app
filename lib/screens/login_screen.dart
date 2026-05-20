@@ -104,6 +104,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
+    // If server reachable, check if any employee exists. If none, route to setup.
+    try {
+      final hasAny = await api.hasAnyEmployee();
+      if (!mounted) return;
+      if (!hasAny) {
+        // Show setup screen before login
+        context.go('/setup');
+        return;
+      }
+    } catch (_) {
+      // ignore - fallback to normal flow
+    }
+
     // Si l'URL est locale, tenter une détection automatique
     final (token, user) = await api.loadAuth();
     if (token != null) {
@@ -407,8 +420,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // server configuration removed from mobile UI
-                      const SizedBox.shrink(),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 4,
+                        children: [
+                          const Text(
+                            'Pas encore de compte ?',
+                            style: TextStyle(color: AppTheme.textSecondary),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/create-account'),
+                            child: const Text('Créer mon compte'),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                     ],
                   ),

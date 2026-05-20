@@ -12,6 +12,8 @@ import 'screens/admin_panel_screen.dart';
 import 'screens/image_view_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/create_account_screen.dart';
+import 'screens/setup_screen.dart';
 import 'theme.dart';
 
 final appRouter = GoRouter(
@@ -22,6 +24,14 @@ final appRouter = GoRouter(
       path: '/login',
       builder: (c, s) => const LoginScreen(),
     ),
+    GoRoute(
+      path: '/create-account',
+      builder: (c, s) => const CreateAccountScreen(),
+    ),
+    GoRoute(
+      path: '/setup',
+      builder: (c, s) => const SetupScreen(),
+    ),
     ShellRoute(
       builder: (context, state, child) => _Shell(child: child),
       routes: [
@@ -29,6 +39,13 @@ final appRouter = GoRouter(
         GoRoute(path: '/spc', builder: (c, s) => const SpcScreen()),
         GoRoute(path: '/camera', builder: (c, s) => const CameraScreen()),
         GoRoute(path: '/history', builder: (c, s) => const HistoryScreen()),
+        GoRoute(
+          path: '/admin',
+          builder: (c, s) => AdminPanelGate(
+            initialUser:
+                s.extra is OperatorUser ? s.extra as OperatorUser : null,
+          ),
+        ),
       ],
     ),
     GoRoute(
@@ -38,12 +55,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (c, s) => const SettingsScreen(),
-    ),
-    GoRoute(
-      path: '/admin',
-      builder: (c, s) => AdminPanelGate(
-        initialUser: s.extra is OperatorUser ? s.extra as OperatorUser : null,
-      ),
     ),
   ],
 );
@@ -55,13 +66,49 @@ class _Shell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.toString();
+    final user = ref.watch(authUserProvider);
+    final isAdmin = user?.isAdmin == true;
     final idx = switch (location) {
       '/' => 0,
       '/spc' => 1,
       '/camera' => 2,
       '/history' => 3,
+      '/admin' when isAdmin => 4,
       _ => 0,
     };
+    final navItems = [
+      const _NavDestination(
+        icon: Icons.grid_view_outlined,
+        selectedIcon: Icons.grid_view,
+        label: 'DASHBOARD',
+        route: '/',
+      ),
+      const _NavDestination(
+        icon: Icons.show_chart_outlined,
+        selectedIcon: Icons.show_chart,
+        label: 'SPC',
+        route: '/spc',
+      ),
+      const _NavDestination(
+        icon: Icons.videocam_outlined,
+        selectedIcon: Icons.videocam,
+        label: 'CAMÉRA',
+        route: '/camera',
+      ),
+      const _NavDestination(
+        icon: Icons.access_time_outlined,
+        selectedIcon: Icons.access_time_filled,
+        label: 'HISTORIQUE',
+        route: '/history',
+      ),
+      if (isAdmin)
+        const _NavDestination(
+          icon: Icons.admin_panel_settings_outlined,
+          selectedIcon: Icons.admin_panel_settings,
+          label: 'COMPTES',
+          route: '/admin',
+        ),
+    ];
 
     return Scaffold(
       body: child,
@@ -78,34 +125,14 @@ class _Shell extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _NavItem(
-                  icon: Icons.grid_view_outlined,
-                  selectedIcon: Icons.grid_view,
-                  label: 'DASHBOARD',
-                  isSelected: idx == 0,
-                  onTap: () => context.go('/'),
-                ),
-                _NavItem(
-                  icon: Icons.show_chart_outlined,
-                  selectedIcon: Icons.show_chart,
-                  label: 'SPC',
-                  isSelected: idx == 1,
-                  onTap: () => context.go('/spc'),
-                ),
-                _NavItem(
-                  icon: Icons.videocam_outlined,
-                  selectedIcon: Icons.videocam,
-                  label: 'CAMÉRA',
-                  isSelected: idx == 2,
-                  onTap: () => context.go('/camera'),
-                ),
-                _NavItem(
-                  icon: Icons.access_time_outlined,
-                  selectedIcon: Icons.access_time_filled,
-                  label: 'HISTORIQUE',
-                  isSelected: idx == 3,
-                  onTap: () => context.go('/history'),
-                ),
+                for (var i = 0; i < navItems.length; i++)
+                  _NavItem(
+                    icon: navItems[i].icon,
+                    selectedIcon: navItems[i].selectedIcon,
+                    label: navItems[i].label,
+                    isSelected: idx == i,
+                    onTap: () => context.go(navItems[i].route),
+                  ),
               ],
             ),
           ),
@@ -169,4 +196,18 @@ class _NavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NavDestination {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final String route;
+
+  const _NavDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.route,
+  });
 }

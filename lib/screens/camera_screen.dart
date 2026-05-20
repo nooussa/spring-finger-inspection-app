@@ -41,12 +41,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   bool _cameraConnected = false;
   bool _cameraTesting = false;
   bool _liveOn = false;
+  bool _liveAnalyzeOn = false;
   bool _arduinoDetected = false;
   String? _arduinoPortLabel;
   String _arduinoStatusText = 'Arduino: not detected';
   Color _arduinoStatusColor = AppTheme.warnOrange;
   IconData _arduinoStatusIcon = Icons.usb_off_outlined;
   Timer? _arduinoStatusResetTimer;
+  Timer? _liveAnalyzeTimer;
   bool _liveStreamError = false;
   bool _pieceWasSaved = false;
   String? _lastLiveVerdictSent;
@@ -80,6 +82,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
 
   @override
   void dispose() {
+    _liveAnalyzeTimer?.cancel();
     _lotController.dispose();
     _clockTimer?.cancel();
     _arduinoStatusResetTimer?.cancel();
@@ -239,7 +242,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   }
 
   void _stopLive({bool keepConnection = true}) {
+    _liveAnalyzeTimer?.cancel();
+    _liveAnalyzeTimer = null;
     _liveOn = false;
+    _liveAnalyzeOn = false;
     _liveStream = null;
     _liveStreamError = false;
     _lastLiveVerdictSent = null;
@@ -255,7 +261,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
 
   Future<void> _probeCameraConnection() async {
     final api = ref.read(apiServiceProvider);
-    final url = api.cameraStreamUrl;
+    final url = api.cameraFrameUrl;
 
     setState(() {
       _cameraTesting = true;
@@ -265,10 +271,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     try {
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 8);
-      final request = await client.getUrl(Uri.parse(url));
-      final response =
+        final request = await client.getUrl(Uri.parse(url));
+        final response =
           await request.close().timeout(const Duration(seconds: 8));
-      final ok = response.statusCode >= 200 && response.statusCode < 300;
+        final ok = response.statusCode >= 200 && response.statusCode < 300;
       client.close(force: true);
 
       if (!mounted) return;
@@ -294,27 +300,25 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 10);
     try {
-      final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close();
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('Flux caméra indisponible (${response.statusCode})');
-      }
-
-      List<int> buffer = [];
-      await for (final chunk in response) {
-        buffer.addAll(chunk);
-        var start = -1;
-        for (var i = 0; i < buffer.length - 1; i++) {
-          if (buffer[i] == 0xFF && buffer[i + 1] == 0xD8) {
-            start = i;
-          }
-          if (start != -1 && buffer[i] == 0xFF && buffer[i + 1] == 0xD9) {
-            yield Uint8List.fromList(buffer.sublist(start, i + 2));
-            buffer = buffer.sublist(i + 2);
-            start = -1;
-            break;
-          }
+      while (mounted && _liveOn) {
+        final request = await client.getUrl(Uri.parse(url));
+        final response = await request.close();
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw Exception('Flux caméra indisponible (${response.statusCode})');
         }
+
+        final bytes = await response.fold<List<int>>(
+          <int>[],
+          (previous, chunk) {
+            previous.addAll(chunk);
+            return previous;
+          },
+        );
+        if (bytes.isNotEmpty) {
+          yield Uint8List.fromList(bytes);
+        }
+
+        await Future<void>.delayed(const Duration(milliseconds: 180));
       }
     } catch (_) {
       if (mounted) {
@@ -343,6 +347,43 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       _lastLiveVerdictSent = null;
       _latestLiveFrame = null;
     });
+  }
+
+  void _startLiveAnalyzeLoop() {
+    _liveAnalyzeTimer?.cancel();
+    _liveAnalyzeTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (!mounted || !_liveOn || !_liveAnalyzeOn) {
+        return;
+      }
+      final analysisState = ref.read(analysisControllerProvider);
+      if (analysisState.phase == AnalysisPhase.running) {
+        return;
+      }
+      if (_latestLiveFrame == null) {
+        return;
+      }
+      await _analyzeLiveFrame();
+    });
+  }
+
+  void _toggleLiveAnalyze() {
+    if (!_liveOn) {
+      _showMessage('Activez d’abord le mode live caméra');
+      return;
+    }
+
+    setState(() {
+      _liveAnalyzeOn = !_liveAnalyzeOn;
+    });
+
+    if (_liveAnalyzeOn) {
+      _startLiveAnalyzeLoop();
+      _showMessage('Analyse live activée');
+    } else {
+      _liveAnalyzeTimer?.cancel();
+      _liveAnalyzeTimer = null;
+      _showMessage('Analyse live arrêtée');
+    }
   }
 
   void _toggleLive() {
@@ -565,7 +606,6 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   @override
   Widget build(BuildContext context) {
     final api = ref.watch(apiServiceProvider);
-    final user = ref.watch(authUserProvider);
     final analysisState = ref.watch(analysisControllerProvider);
     final isAnalyzing = analysisState.phase == AnalysisPhase.running;
     final verdictBarColor = analysisState.result == null
@@ -579,7 +619,16 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(88),
         child: Container(
-          color: AppTheme.bgWhite,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryBlue.withValues(alpha: 0.92),
+                AppTheme.failRed.withValues(alpha: 0.92),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
           child: SafeArea(
             bottom: false,
             child: Column(
@@ -597,13 +646,12 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryBlue
-                                    .withValues(alpha: 0.12),
+                                color: Colors.white.withValues(alpha: 0.18),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(
                                 Icons.precision_manufacturing_outlined,
-                                color: AppTheme.primaryBlue,
+                                color: Colors.white,
                                 size: 20,
                               ),
                             ),
@@ -620,7 +668,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w800,
-                                      color: AppTheme.textPrimary,
+                                      color: Colors.white,
                                     ),
                                   ),
                                   Text(
@@ -629,7 +677,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontSize: 10,
-                                      color: AppTheme.textSecondary,
+                                      color: Colors.white70,
                                     ),
                                   ),
                                 ],
@@ -647,7 +695,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.blueBgLight,
+                            color: Colors.white.withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
@@ -655,7 +703,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: AppTheme.primaryBlue,
+                              color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -686,20 +734,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 13,
-                                  color: AppTheme.textPrimary,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              tooltip: 'Admin',
-                              icon: const Icon(Icons.settings_outlined),
-                              color: AppTheme.primaryBlue,
-                              onPressed: user?.isAdmin == true
-                                  ? () => context.go('/admin', extra: user)
-                                  : null,
                             ),
                           ],
                         ),
@@ -740,9 +778,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
               _ActionBar(
                 isAnalyzing: isAnalyzing,
                 liveOn: _liveOn,
+                liveAnalyzeOn: _liveAnalyzeOn,
                 cameraTesting: _cameraTesting,
                 onConnectCamera: _probeCameraConnection,
                 onAnalyze: _analyzeCurrent,
+                onToggleLiveAnalyze: _toggleLiveAnalyze,
                 onDetectArduino: _detectArduino,
               ),
               const SizedBox(height: 12),
@@ -1151,17 +1191,21 @@ class _ImageActionsRow extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   final bool isAnalyzing;
   final bool liveOn;
+  final bool liveAnalyzeOn;
   final bool cameraTesting;
   final VoidCallback onConnectCamera;
   final VoidCallback onAnalyze;
+  final VoidCallback onToggleLiveAnalyze;
   final VoidCallback onDetectArduino;
 
   const _ActionBar({
     required this.isAnalyzing,
     required this.liveOn,
+    required this.liveAnalyzeOn,
     required this.cameraTesting,
     required this.onConnectCamera,
     required this.onAnalyze,
+    required this.onToggleLiveAnalyze,
     required this.onDetectArduino,
   });
 
@@ -1214,6 +1258,14 @@ class _ActionBar extends StatelessWidget {
             AppTheme.primaryBlue,
             onAnalyze,
             disabled: isAnalyzing,
+          ),
+          const SizedBox(width: 10),
+          action(
+            liveAnalyzeOn ? 'Analyse Live OFF' : 'Analyse Live ON',
+            liveAnalyzeOn ? Icons.pause_circle_outline : Icons.play_circle_outline,
+            liveOn ? const Color(0xFF2E7D32) : AppTheme.textSecondary,
+            onToggleLiveAnalyze,
+            disabled: !liveOn,
           ),
           const SizedBox(width: 10),
           action(

@@ -8,7 +8,6 @@ import '../theme.dart';
 const Color _adminPurple = Color(0xFF6C4AB6);
 const Color _adminBlue = AppTheme.primaryBlue;
 const Color _dangerRed = Color(0xFFD32F2F);
-const Color _successGreen = Color(0xFF2E7D32);
 const Set<String> _adminPostes = {
   'admin',
   'manager',
@@ -133,6 +132,19 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
           ..addAll(results[1].map(_AdminEmployee.fromJson));
       });
     } on ApiException catch (e) {
+      final message = e.message.toLowerCase();
+      if (message.contains('401') ||
+          message.contains('unauthorized') ||
+          message.contains('token invalide') ||
+          message.contains('accès admin requis')) {
+        await _api.clearAuth();
+        ref.read(authTokenProvider.notifier).state = null;
+        ref.read(authUserProvider.notifier).state = null;
+        if (mounted) {
+          context.go('/login');
+        }
+        return;
+      }
       _showSnack(e.message);
     } catch (e) {
       _showSnack(e.toString());
@@ -393,53 +405,88 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   @override
   Widget build(BuildContext context) {
     final currentLogin = _effectiveUser?.login ?? '';
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         backgroundColor: AppTheme.bgLight,
         appBar: AppBar(
-          toolbarHeight: 72,
-          title: const Column(
+          toolbarHeight: isCompact ? 84 : 72,
+          title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Gestion des comptes'),
-              SizedBox(height: 2),
-              Text(
-                'Comptes opérateurs, annuaire employé et création rapide',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Gestion des comptes',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (!isCompact) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.blueBgLight,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'ADMIN',
+                        style: TextStyle(
+                          color: AppTheme.primaryBlue,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
+              if (!isCompact) ...[
+                const SizedBox(height: 2),
+                const Text(
+                  'Comptes opérateurs, annuaire employé et création rapide',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ],
           ),
           backgroundColor: AppTheme.bgWhite,
           foregroundColor: AppTheme.textPrimary,
           elevation: 0,
           actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 180),
-                  child: Text(
-                    'Connecté : ${currentLogin.isEmpty ? '-' : currentLogin}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+            if (!isCompact)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 180),
+                    child: Text(
+                      'Connecté : ${currentLogin.isEmpty ? '-' : currentLogin}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
           ],
           bottom: const TabBar(
             isScrollable: true,
@@ -488,7 +535,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
                       showCheckboxColumn: false,
-                      headingRowColor: MaterialStateProperty.all(
+                      headingRowColor: WidgetStatePropertyAll(
                         AppTheme.blueBgLight,
                       ),
                       columns: const [
@@ -589,7 +636,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
                       showCheckboxColumn: false,
-                      headingRowColor: MaterialStateProperty.all(
+                      headingRowColor: WidgetStatePropertyAll(
                         AppTheme.blueBgLight,
                       ),
                       columns: const [
@@ -702,7 +749,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    value: _selectedPoste,
+                    initialValue: _selectedPoste,
                     decoration: const InputDecoration(labelText: 'Poste'),
                     items: _posteOptions
                         .map(
@@ -719,7 +766,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '→ Rôle attribué : ${_rolePreviewLabel}',
+                    '→ Rôle attribué : $_rolePreviewLabel',
                     style: TextStyle(
                       color: roleColor,
                       fontSize: 12,
