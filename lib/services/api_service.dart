@@ -57,7 +57,7 @@ class OperatorUser {
 class ApiService {
   // Remplacer par l'IP LAN du PC qui exécute FastAPI.
   // Exemple: http://192.168.1.87:8000
-  static const String _defaultBaseUrl = 'http://192.168.1.87:8000';
+  static const String _defaultBaseUrl = 'http://10.0.30.31:8000';
   static const String _baseUrlKey = 'api_base_url';
   static const String _authTokenKey = 'auth_token';
   static const String _authUserKey = 'auth_user';

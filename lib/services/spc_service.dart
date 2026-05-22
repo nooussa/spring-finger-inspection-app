@@ -7,9 +7,9 @@ import '../models/spc_state.dart';
 /// Classe statique pure (pas de provider).
 class SpcService {
   /// Constantes SPC
-  static const double defaultUcl = 1.25;
-  static const double defaultLcl = 1.15;
-  static const double defaultTarget = 1.20;
+  static const double defaultUcl = 2.650;
+  static const double defaultLcl = 2.350;
+  static const double defaultTarget = 2.500;
 
   /// Calcule l'état SPC à partir d'une liste d'inspections.
   /// Extrait pitch_mean_mm de chaque inspection et construit SpcState.
@@ -31,20 +31,12 @@ class SpcService {
   /// Extrait les valeurs de pitch_mean_mm d'une liste d'inspections.
   /// Filtre les valeurs nulles ou 0.
   static List<double> extractPitches(List<InspectionResult> inspections) {
-    return inspections
-        .where((i) => i.pitchMeanMm > 0)
-        .map((i) => i.pitchMeanMm)
-        .toList()
-      ..sort((a, b) => 0); // Garder l'ordre original (tri stable)
-
-    // Note: on inverse pour avoir chronologique (les plus anciens d'abord)
-    // car l'API retourne les plus récents en premier
+    return extractPitchesChronological(inspections);
   }
 
   /// Extrait les pitches dans l'ordre chronologique (plus ancien → plus récent)
   static List<double> extractPitchesChronological(
       List<InspectionResult> inspections) {
-    // L'API retourne les plus récents en premier, on inverse
     final sorted = List<InspectionResult>.from(inspections)
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return sorted

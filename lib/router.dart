@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'services/api_service.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/spc_screen.dart';
 import 'screens/camera_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/admin_panel_screen.dart';
@@ -36,7 +35,6 @@ final appRouter = GoRouter(
       builder: (context, state, child) => _Shell(child: child),
       routes: [
         GoRoute(path: '/', builder: (c, s) => const DashboardScreen()),
-        GoRoute(path: '/spc', builder: (c, s) => const SpcScreen()),
         GoRoute(path: '/camera', builder: (c, s) => const CameraScreen()),
         GoRoute(path: '/history', builder: (c, s) => const HistoryScreen()),
         GoRoute(
@@ -70,10 +68,9 @@ class _Shell extends ConsumerWidget {
     final isAdmin = user?.isAdmin == true;
     final idx = switch (location) {
       '/' => 0,
-      '/spc' => 1,
-      '/camera' => 2,
-      '/history' => 3,
-      '/admin' when isAdmin => 4,
+      '/camera' => 1,
+      '/history' => 2,
+      '/admin' when isAdmin => 3,
       _ => 0,
     };
     final navItems = [
@@ -83,12 +80,7 @@ class _Shell extends ConsumerWidget {
         label: 'DASHBOARD',
         route: '/',
       ),
-      const _NavDestination(
-        icon: Icons.show_chart_outlined,
-        selectedIcon: Icons.show_chart,
-        label: 'SPC',
-        route: '/spc',
-      ),
+      // SPC removed
       const _NavDestination(
         icon: Icons.videocam_outlined,
         selectedIcon: Icons.videocam,

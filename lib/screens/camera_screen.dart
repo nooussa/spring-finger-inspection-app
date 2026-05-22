@@ -26,7 +26,8 @@ class CameraScreen extends ConsumerStatefulWidget {
 
 class _CameraScreenState extends ConsumerState<CameraScreen>
     with SingleTickerProviderStateMixin {
-  static const String _defaultLotCode = 'A-2025';
+  // Lot par défaut vide — l'utilisateur saisira le lot manuellement.
+  static const String _defaultLotCode = '';
 
   final ImagePicker _picker = ImagePicker();
   final TextEditingController _lotController = TextEditingController();
@@ -95,9 +96,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     return '${two(value.hour)}:${two(value.minute)}:${two(value.second)}';
   }
 
-  String get _activeLotName => 'Lot $_lotCode';
+  String get _activeLotName =>
+      _lotCode.isEmpty ? 'Lot (non défini)' : 'Lot $_lotCode';
 
-  String get _currentPieceCode => '$_lotCode.$_pieceCounter';
+  String get _currentPieceCode =>
+      _lotCode.isEmpty ? '$_pieceCounter' : '$_lotCode.$_pieceCounter';
 
   Future<void> _handleLotChanged(String value) async {
     final lot = value.trim();
@@ -152,7 +155,8 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     setState(() {
       _lotCode = normalizedLot.isEmpty ? _defaultLotCode : normalizedLot;
       _pieceCounter = nextCounter;
-      if (_lotController.text != _lotCode) {
+      // Only update the controller text when we have a non-empty lot code.
+      if (normalizedLot.isNotEmpty && _lotController.text != _lotCode) {
         _lotController.value = TextEditingValue(
           text: _lotCode,
           selection: TextSelection.collapsed(offset: _lotCode.length),
@@ -271,10 +275,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     try {
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 8);
-        final request = await client.getUrl(Uri.parse(url));
-        final response =
+      final request = await client.getUrl(Uri.parse(url));
+      final response =
           await request.close().timeout(const Duration(seconds: 8));
-        final ok = response.statusCode >= 200 && response.statusCode < 300;
+      final ok = response.statusCode >= 200 && response.statusCode < 300;
       client.close(force: true);
 
       if (!mounted) return;
@@ -282,7 +286,12 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
         _cameraConnected = ok;
       });
 
-      _showMessage(ok ? 'Caméra connectée' : 'Caméra non disponible');
+      if (ok) {
+        _startLive();
+      }
+
+      _showMessage(
+          ok ? 'Caméra connectée et flux lancé' : 'Caméra non disponible');
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -296,6 +305,24 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     }
   }
 
+  static int _indexOfJpegStart(List<int> data) {
+    for (var i = 0; i < data.length - 1; i++) {
+      if (data[i] == 0xFF && data[i + 1] == 0xD8) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  static int _indexOfJpegEnd(List<int> data, int start) {
+    for (var i = start; i < data.length - 1; i++) {
+      if (data[i] == 0xFF && data[i + 1] == 0xD9) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   Stream<Uint8List> _mjpegStream(String url) async* {
     final client = HttpClient();
     client.connectionTimeout = const Duration(seconds: 10);
@@ -307,15 +334,30 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
           throw Exception('Flux caméra indisponible (${response.statusCode})');
         }
 
-        final bytes = await response.fold<List<int>>(
-          <int>[],
-          (previous, chunk) {
-            previous.addAll(chunk);
-            return previous;
-          },
-        );
-        if (bytes.isNotEmpty) {
-          yield Uint8List.fromList(bytes);
+        final buffer = <int>[];
+        await for (final chunk in response) {
+          buffer.addAll(chunk);
+          while (true) {
+            final start = _indexOfJpegStart(buffer);
+            if (start == -1) {
+              if (buffer.length > 1) {
+                buffer.removeRange(0, buffer.length - 1);
+              }
+              break;
+            }
+            if (start > 0) {
+              buffer.removeRange(0, start);
+            }
+            final end = _indexOfJpegEnd(buffer, 2);
+            if (end == -1) {
+              break;
+            }
+            final frame = Uint8List.fromList(buffer.sublist(0, end + 2));
+            buffer.removeRange(0, end + 2);
+            if (frame.isNotEmpty) {
+              yield frame;
+            }
+          }
         }
 
         await Future<void>.delayed(const Duration(milliseconds: 180));
@@ -1262,7 +1304,9 @@ class _ActionBar extends StatelessWidget {
           const SizedBox(width: 10),
           action(
             liveAnalyzeOn ? 'Analyse Live OFF' : 'Analyse Live ON',
-            liveAnalyzeOn ? Icons.pause_circle_outline : Icons.play_circle_outline,
+            liveAnalyzeOn
+                ? Icons.pause_circle_outline
+                : Icons.play_circle_outline,
             liveOn ? const Color(0xFF2E7D32) : AppTheme.textSecondary,
             onToggleLiveAnalyze,
             disabled: !liveOn,

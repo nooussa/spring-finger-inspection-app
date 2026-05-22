@@ -19,9 +19,9 @@ class SpcState {
 
   const SpcState({
     this.pitches = const [],
-    this.ucl = 1.25,
-    this.lcl = 1.15,
-    this.target = 1.20,
+    this.ucl = 2.65,
+    this.lcl = 2.35,
+    this.target = 2.50,
     this.driftDetected = false,
   });
 
@@ -120,9 +120,9 @@ class SpcState {
   /// Crée un état à partir d'une liste de pitches
   factory SpcState.fromPitches(
     List<double> pitches, {
-    double ucl = 1.25,
-    double lcl = 1.15,
-    double target = 1.20,
+    double ucl = 2.65,
+    double lcl = 2.35,
+    double target = 2.50,
   }) {
     return SpcState(
       pitches: pitches,

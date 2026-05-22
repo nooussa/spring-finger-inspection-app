@@ -72,8 +72,6 @@ class AdminPanelScreen extends ConsumerStatefulWidget {
 class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   final TextEditingController _operatorSearchCtrl = TextEditingController();
   final TextEditingController _employeeSearchCtrl = TextEditingController();
-  final TextEditingController _employeeIdCtrl = TextEditingController();
-  final TextEditingController _employeeNameCtrl = TextEditingController();
 
   final List<_AdminOperator> _operators = [];
   final List<_AdminEmployee> _employees = [];
@@ -95,8 +93,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   void dispose() {
     _operatorSearchCtrl.dispose();
     _employeeSearchCtrl.dispose();
-    _employeeIdCtrl.dispose();
-    _employeeNameCtrl.dispose();
+    
     super.dispose();
   }
 
@@ -362,39 +359,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     }
   }
 
-  Future<void> _addEmployee() async {
-    final token = _token;
-    if (token == null) return;
-
-    final empId = _employeeIdCtrl.text.trim();
-    final name = _employeeNameCtrl.text.trim();
-    final poste = _selectedPoste.trim();
-
-    if (empId.isEmpty || name.isEmpty || poste.isEmpty) {
-      _showSnack('Tous les champs sont requis');
-      return;
-    }
-
-    try {
-      await _api.addEmployee(
-        token: token,
-        empId: empId,
-        name: name,
-        poste: poste,
-      );
-      _showSnack('Employé ajouté');
-      _employeeIdCtrl.clear();
-      _employeeNameCtrl.clear();
-      setState(() {
-        _selectedPoste = _posteOptions.first;
-      });
-      await _loadData();
-    } on ApiException catch (e) {
-      _showSnack(e.message);
-    } catch (e) {
-      _showSnack(e.toString());
-    }
-  }
+  // Employee creation removed from admin panel UI — handled elsewhere.
 
   Color get _rolePreviewColor =>
       _adminPostes.contains(_selectedPoste) ? _adminPurple : _adminBlue;
@@ -406,106 +371,99 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   Widget build(BuildContext context) {
     final currentLogin = _effectiveUser?.login ?? '';
     final isCompact = MediaQuery.sizeOf(context).width < 700;
-
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         backgroundColor: AppTheme.bgLight,
-        appBar: AppBar(
-          toolbarHeight: isCompact ? 84 : 72,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+        body: SafeArea(
+          child: Column(
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      'Gestion des comptes',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              // Header styled like dashboard
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryBlue.withValues(alpha: 0.9),
+                      AppTheme.failRed.withValues(alpha: 0.9),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  if (!isCompact) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppTheme.blueBgLight,
-                        borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  children: [
+                    // Logo removed per request (header without image)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Gestion des comptes',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (!isCompact)
+                            const Text(
+                              'Comptes opérateurs et annuaire employé',
+                              style: TextStyle(fontSize: 11, color: Colors.white70),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
-                      child: const Text(
-                        'ADMIN',
-                        style: TextStyle(
-                          color: AppTheme.primaryBlue,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
+                    ),
+                    if (!isCompact)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 180),
+                          child: Text(
+                            'Connecté : ${currentLogin.isEmpty ? '-' : currentLogin}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
                   ],
-                ],
-              ),
-              if (!isCompact) ...[
-                const SizedBox(height: 2),
-                const Text(
-                  'Comptes opérateurs, annuaire employé et création rapide',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
                 ),
-              ],
-            ],
-          ),
-          backgroundColor: AppTheme.bgWhite,
-          foregroundColor: AppTheme.textPrimary,
-          elevation: 0,
-          actions: [
-            if (!isCompact)
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 180),
-                    child: Text(
-                      'Connecté : ${currentLogin.isEmpty ? '-' : currentLogin}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+              ),
+              Material(
+                color: AppTheme.bgWhite,
+                child: TabBar(
+                  isScrollable: true,
+                  labelColor: AppTheme.textPrimary,
+                  unselectedLabelColor: AppTheme.textSecondary,
+                  tabs: const [
+                    Tab(text: 'Opérateurs'),
+                    Tab(text: 'Liste des employés'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _loading && _operators.isEmpty && _employees.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : TabBarView(
+                        children: [
+                          _buildOperatorsTab(currentLogin),
+                          _buildEmployeesTab(),
+                        ],
                       ),
-                    ),
-                  ),
-                ),
               ),
-          ],
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Opérateurs'),
-              Tab(text: 'Employés'),
-              Tab(text: '+ Ajouter employé'),
             ],
           ),
         ),
-        body: _loading && _operators.isEmpty && _employees.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                children: [
-                  _buildOperatorsTab(currentLogin),
-                  _buildEmployeesTab(),
-                  _buildAddEmployeeTab(),
-                ],
-              ),
       ),
     );
   }
@@ -697,103 +655,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     );
   }
 
-  Widget _buildAddEmployeeTab() {
-    final roleColor = _rolePreviewColor;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Card(
-            elevation: 0,
-            color: AppTheme.bgWhite,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-              side: const BorderSide(color: AppTheme.border, width: 0.6),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Ajouter un employé',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Cet employé pourra ensuite créer son compte dans l’application.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  TextField(
-                    controller: _employeeIdCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'ID Employé (badge)',
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _employeeNameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom complet',
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedPoste,
-                    decoration: const InputDecoration(labelText: 'Poste'),
-                    items: _posteOptions
-                        .map(
-                          (poste) => DropdownMenuItem(
-                            value: poste,
-                            child: Text(poste),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => _selectedPoste = value);
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '→ Rôle attribué : $_rolePreviewLabel',
-                    style: TextStyle(
-                      color: roleColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _addEmployee,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _adminPurple,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      icon: const Icon(Icons.person_add_alt_1_outlined),
-                      label: const Text('＋ Ajouter l\'employé'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // Add-employee tab removed from admin panel; creation handled elsewhere.
 
   Widget _tableCell(
     String text, {

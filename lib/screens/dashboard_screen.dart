@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import '../theme.dart';
 import '../models/inspection_result.dart';
 import '../providers/inspection_provider.dart';
-import '../providers/spc_provider.dart';
 import '../services/inspection_db_service.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -18,7 +17,7 @@ class DashboardScreen extends ConsumerWidget {
     final pass = ref.watch(passCountProvider);
     final fail = ref.watch(failCountProvider);
     final rate = ref.watch(conformityRateProvider);
-    final spcState = ref.watch(spcStateProvider);
+    final weeklyHistoryAsync = ref.watch(inspectionHistoryProvider(300));
     final inspectionsAsync = ref.watch(inspectionListProvider);
     final isConnected = ref.watch(isApiConnectedProvider);
     final total = pass + fail;
@@ -36,7 +35,7 @@ class DashboardScreen extends ConsumerWidget {
                   children: [
                     _buildKpiCards(pass, fail, rate, total),
                     const SizedBox(height: 12),
-                    _buildSpcCard(spcState, context),
+                    _buildWeeklyQualityCard(weeklyHistoryAsync, context),
                     const SizedBox(height: 12),
                     _buildLiveFeed(inspectionsAsync, total, context),
                     const SizedBox(height: 12),
@@ -230,30 +229,36 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  Widget _buildSpcCard(dynamic spcState, BuildContext context) {
-    final pitches = spcState.pitches as List<double>;
-
+  Widget _buildWeeklyQualityCard(
+    AsyncValue<List<InspectionResult>> inspectionsAsync,
+    BuildContext context,
+  ) {
     return _GradientBorderBox(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'SPC — PITCH (MM)',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                  letterSpacing: 0.5,
+              const Expanded(
+                child: Text(
+                  'CONFORMES / NON CONFORMES PAR SEMAINE',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
+              const SizedBox(width: 10),
               GestureDetector(
                 onTap: () => context.push('/spc'),
                 child: const Text(
-                  'Défauts →',
+                  'Détails →',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.primaryBlue,
@@ -263,30 +268,83 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 160,
-            child: pitches.length < 2
-                ? const Center(
+          const SizedBox(height: 10),
+          inspectionsAsync.when(
+            data: (inspections) {
+              final weeklyPoints = _buildWeeklyQualityPoints(
+                inspections,
+                weeks: 8,
+              );
+
+              final totalPass = weeklyPoints.fold<int>(
+                0,
+                (sum, point) => sum + point.passCount,
+              );
+              final totalFail = weeklyPoints.fold<int>(
+                0,
+                (sum, point) => sum + point.failCount,
+              );
+
+              if (weeklyPoints.every((point) => point.total == 0)) {
+                return const SizedBox(
+                  height: 160,
+                  child: Center(
                     child: Text(
-                      'En attente de données...',
+                      'En attente de données hebdomadaires...',
                       style: TextStyle(color: AppTheme.textSecondary),
                     ),
-                  )
-                : CustomPaint(
-                    painter: _SpcChartPainter(pitches: pitches),
-                    size: Size.infinite,
                   ),
-          ),
-          const SizedBox(height: 12),
-          const _LegendItemText(
-            color: AppTheme.failRed,
-            label: 'UCL / LCL : limites de contrôle',
-          ),
-          const SizedBox(height: 4),
-          const _LegendItemText(
-            color: AppTheme.primaryBlue,
-            label: 'CL : ligne cible (2.788 mm)',
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 210,
+                    child: CustomPaint(
+                      painter: _WeeklyQualityChartPainter(points: weeklyPoints),
+                      size: Size.infinite,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _LegendChip(
+                        label: 'PASS: $totalPass',
+                        color: AppTheme.passGreen,
+                      ),
+                      _LegendChip(
+                        label: 'FAIL: $totalFail',
+                        color: AppTheme.failRed,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const _LegendItemText(
+                    color: AppTheme.primaryBlue,
+                    label: 'Axe X : semaines récentes',
+                  ),
+                ],
+              );
+            },
+            loading: () => const SizedBox(
+              height: 160,
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            error: (_, __) => const SizedBox(
+              height: 160,
+              child: Center(
+                child: Text(
+                  'Impossible de charger les données hebdomadaires',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -720,112 +778,114 @@ class _DefectTag extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-class _SpcChartPainter extends CustomPainter {
-  final List<double> pitches;
+class _WeeklyQualityPoint {
+  final DateTime weekStart;
+  final int passCount;
+  final int failCount;
 
-  static const double ucl = 3.020;
-  static const double lcl = 2.350;
-  static const double cl = 2.788;
+  const _WeeklyQualityPoint({
+    required this.weekStart,
+    required this.passCount,
+    required this.failCount,
+  });
 
-  _SpcChartPainter({required this.pitches});
+  int get total => passCount + failCount;
+}
+
+List<_WeeklyQualityPoint> _buildWeeklyQualityPoints(
+  List<InspectionResult> inspections, {
+  int weeks = 8,
+}) {
+  DateTime weekStart(DateTime value) {
+    final normalized = DateTime(value.year, value.month, value.day);
+    return normalized
+        .subtract(Duration(days: normalized.weekday - DateTime.monday));
+  }
+
+  final nowWeekStart = weekStart(DateTime.now());
+  final pointsByWeek = <DateTime, _WeeklyQualityPoint>{};
+
+  for (int offset = weeks - 1; offset >= 0; offset--) {
+    final start = DateTime(
+      nowWeekStart.year,
+      nowWeekStart.month,
+      nowWeekStart.day,
+    ).subtract(Duration(days: offset * 7));
+    pointsByWeek[start] = _WeeklyQualityPoint(
+      weekStart: start,
+      passCount: 0,
+      failCount: 0,
+    );
+  }
+
+  for (final inspection in inspections) {
+    final verdict = inspection.verdict.trim().toUpperCase();
+    if (verdict != 'PASS' && verdict != 'FAIL') continue;
+
+    final start = weekStart(inspection.timestamp);
+    final bucket = pointsByWeek[start];
+    if (bucket == null) continue;
+
+    pointsByWeek[start] = _WeeklyQualityPoint(
+      weekStart: bucket.weekStart,
+      passCount: bucket.passCount + (verdict == 'PASS' ? 1 : 0),
+      failCount: bucket.failCount + (verdict == 'FAIL' ? 1 : 0),
+    );
+  }
+
+  final ordered = pointsByWeek.values.toList()
+    ..sort((a, b) => a.weekStart.compareTo(b.weekStart));
+  return ordered;
+}
+
+String _formatWeekLabel(DateTime start) {
+  String two(int value) => value.toString().padLeft(2, '0');
+  return '${two(start.day)}/${two(start.month)}';
+}
+
+class _WeeklyQualityChartPainter extends CustomPainter {
+  final List<_WeeklyQualityPoint> points;
+
+  _WeeklyQualityChartPainter({required this.points});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (pitches.isEmpty) return;
+    if (points.isEmpty) return;
 
-    const double minV = lcl - 0.2;
-    const double maxV = ucl + 0.2;
-    const double range = maxV - minV;
+    final maxValue = points
+        .map((point) => point.total)
+        .fold<int>(0, (sum, value) => value > sum ? value : sum)
+        .toDouble();
+    final topValue = maxValue <= 0 ? 1.0 : maxValue * 1.35;
+
+    const leftMargin = 42.0;
+    const rightMargin = 10.0;
+    const topMargin = 12.0;
+    const bottomMargin = 34.0;
 
     double py(double v) =>
-        size.height - 20 - ((v - minV) / range) * (size.height - 32);
+        size.height -
+        bottomMargin -
+        (v / topValue) * (size.height - topMargin - bottomMargin);
     double px(int i) =>
-        34 + (i * (size.width - 40) / (pitches.length - 1).clamp(1, 999));
+        leftMargin +
+        (i *
+            (size.width - leftMargin - rightMargin) /
+            (points.length - 1).clamp(1, 999));
 
-    final limitPaint = Paint()
-      ..color = AppTheme.failRed.withValues(alpha: 0.8)
+    final gridPaint = Paint()
+      ..color = AppTheme.textSecondary.withValues(alpha: 0.12)
       ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
-    final clPaint = Paint()
-      ..color = AppTheme.primaryBlue.withValues(alpha: 0.8)
-      ..strokeWidth = 0.8
-      ..style = PaintingStyle.stroke;
+    for (int i = 0; i <= 4; i++) {
+      final y = py(topValue * (i / 4));
+      canvas.drawLine(Offset(leftMargin, y),
+          Offset(size.width - rightMargin, y), gridPaint);
 
-    _drawDashedLine(
-        canvas, Offset(34, py(ucl)), Offset(size.width, py(ucl)), limitPaint);
-    _drawDashedLine(
-        canvas, Offset(34, py(lcl)), Offset(size.width, py(lcl)), limitPaint);
-    _drawDashedLine(
-        canvas, Offset(34, py(cl)), Offset(size.width, py(cl)), clPaint);
-
-    _drawLabel(canvas, 'UCL', 2, py(ucl) - 10, AppTheme.failRed);
-    _drawLabel(canvas, 'CL', 2, py(cl) - 10, AppTheme.primaryBlue);
-    _drawLabel(canvas, 'LCL', 2, py(lcl) - 10, AppTheme.failRed);
-
-    final curvePath = Path();
-    for (int i = 0; i < pitches.length; i++) {
-      final x = px(i);
-      final y = py(pitches[i]);
-      if (i == 0) {
-        curvePath.moveTo(x, y);
-      } else {
-        curvePath.lineTo(x, y);
-      }
-    }
-
-    final fillPath = Path.from(curvePath)
-      ..lineTo(px(pitches.length - 1), size.height - 20)
-      ..lineTo(px(0), size.height - 20)
-      ..close();
-
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = LinearGradient(
-          colors: [
-            AppTheme.failRed.withValues(alpha: 0.08),
-            AppTheme.primaryBlue.withValues(alpha: 0.08),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..style = PaintingStyle.fill,
-    );
-
-    canvas.drawPath(
-      curvePath,
-      Paint()
-        ..shader = LinearGradient(
-          colors: [
-            AppTheme.failRed.withValues(alpha: 0.9),
-            AppTheme.primaryBlue.withValues(alpha: 0.9),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..strokeWidth = 2.0
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke,
-    );
-
-    for (int i = 0; i < pitches.length; i++) {
-      final x = px(i);
-      final y = py(pitches[i]);
-
-      canvas.drawCircle(Offset(x, y), 3.5, Paint()..color = Colors.white);
-      canvas.drawCircle(
-        Offset(x, y),
-        3.5,
-        Paint()
-          ..color = AppTheme.primaryBlue
-          ..strokeWidth = 1.2
-          ..style = PaintingStyle.stroke,
-      );
-
-      final xLabel = TextPainter(
+      final valueLabel = TextPainter(
         text: TextSpan(
-          text: 'P${i + 1}',
+          text: '${(topValue * (1 - i / 4)).round()}',
           style: const TextStyle(
             fontSize: 8,
             color: AppTheme.textSecondary,
@@ -834,37 +894,104 @@ class _SpcChartPainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      xLabel.paint(canvas, Offset(x - xLabel.width / 2, size.height - 10));
+      valueLabel.paint(canvas, Offset(2, y - valueLabel.height / 2));
+    }
+
+    _drawLabel(canvas, 'Nb', 2, 2, AppTheme.textSecondary);
+
+    final passPoints = <Offset>[
+      for (int i = 0; i < points.length; i++)
+        Offset(px(i), py(points[i].passCount.toDouble()))
+    ];
+    final failPoints = <Offset>[
+      for (int i = 0; i < points.length; i++)
+        Offset(px(i), py(points[i].failCount.toDouble()))
+    ];
+
+    _drawSeries(
+      canvas,
+      size,
+      passPoints,
+      AppTheme.passGreen,
+      AppTheme.passGreen.withValues(alpha: 0.10),
+    );
+    _drawSeries(
+      canvas,
+      size,
+      failPoints,
+      AppTheme.failRed,
+      AppTheme.failRed.withValues(alpha: 0.10),
+    );
+
+    for (int i = 0; i < points.length; i++) {
+      final x = px(i);
+      final label = _formatWeekLabel(points[i].weekStart);
+      final showLabel = i == 0 || i == points.length - 1 || i.isEven;
+      if (!showLabel) continue;
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            fontSize: 8,
+            color: AppTheme.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(x - tp.width / 2, size.height - 20));
     }
   }
 
-  void _drawDashedLine(Canvas canvas, Offset p1, Offset p2, Paint paint) {
-    const dashWidth = 3.0;
-    const dashSpace = 2.0;
-    final dx = p2.dx - p1.dx;
-    final dy = p2.dy - p1.dy;
-    final len = _sqrt(dx * dx + dy * dy);
-    final unitX = dx / len;
-    final unitY = dy / len;
-    double drawn = 0;
-    while (drawn < len) {
-      final start = Offset(p1.dx + unitX * drawn, p1.dy + unitY * drawn);
-      final end = Offset(
-        p1.dx + unitX * (drawn + dashWidth).clamp(0, len),
-        p1.dy + unitY * (drawn + dashWidth).clamp(0, len),
+  void _drawSeries(
+    Canvas canvas,
+    Size size,
+    List<Offset> seriesPoints,
+    Color strokeColor,
+    Color fillColor,
+  ) {
+    if (seriesPoints.isEmpty) return;
+
+    final baseline = size.height - 34;
+    final curvePath = Path()
+      ..moveTo(seriesPoints.first.dx, seriesPoints.first.dy);
+    for (int i = 1; i < seriesPoints.length; i++) {
+      curvePath.lineTo(seriesPoints[i].dx, seriesPoints[i].dy);
+    }
+
+    final fillPath = Path.from(curvePath)
+      ..lineTo(seriesPoints.last.dx, baseline)
+      ..lineTo(seriesPoints.first.dx, baseline)
+      ..close();
+
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..color = fillColor
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawPath(
+      curvePath,
+      Paint()
+        ..color = strokeColor
+        ..strokeWidth = 2.2
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke,
+    );
+
+    for (final point in seriesPoints) {
+      canvas.drawCircle(point, 3.2, Paint()..color = Colors.white);
+      canvas.drawCircle(
+        point,
+        3.2,
+        Paint()
+          ..color = strokeColor
+          ..strokeWidth = 1.1
+          ..style = PaintingStyle.stroke,
       );
-      canvas.drawLine(start, end, paint);
-      drawn += dashWidth + dashSpace;
     }
-  }
-
-  double _sqrt(double x) {
-    if (x <= 0) return 0;
-    double guess = x / 2;
-    for (int i = 0; i < 10; i++) {
-      guess = (guess + x / guess) / 2;
-    }
-    return guess;
   }
 
   void _drawLabel(Canvas canvas, String text, double x, double y, Color color) {
@@ -914,6 +1041,33 @@ class _LegendItemText extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LegendChip extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _LegendChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
