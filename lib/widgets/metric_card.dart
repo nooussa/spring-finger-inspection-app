@@ -1,9 +1,8 @@
-// lib/widgets/metric_card.dart
+
 
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// Carte de métrique réutilisable pour afficher PASS/FAIL ou autres stats.
 class MetricCard extends StatelessWidget {
   final String label;
   final dynamic value; // int ou String
@@ -24,7 +23,6 @@ class MetricCard extends StatelessWidget {
     this.isEmpty = false,
   });
 
-  /// Factory pour carte PASS
   factory MetricCard.pass({
     required int value,
     required String sub,
@@ -41,7 +39,6 @@ class MetricCard extends StatelessWidget {
     );
   }
 
-  /// Factory pour carte FAIL
   factory MetricCard.fail({
     required int value,
     required String sub,

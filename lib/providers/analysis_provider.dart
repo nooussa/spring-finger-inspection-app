@@ -45,7 +45,13 @@ class AnalysisController extends StateNotifier<AnalysisState> {
 
   AnalysisController(this._analysisService) : super(const AnalysisState.idle());
 
-  Future<void> run({String? token}) async {
+  Future<void> run({
+    String? token,
+    String? operatorId,
+    String? pieceCode,
+    String? lot,
+    String mode = 'quick',
+  }) async {
     state = state.copyWith(
       phase: AnalysisPhase.running,
       error: null,
@@ -54,7 +60,13 @@ class AnalysisController extends StateNotifier<AnalysisState> {
     );
 
     try {
-      final runResult = await _analysisService.analyzeNow(token: token);
+      final runResult = await _analysisService.analyzeNow(
+        token: token,
+        operatorId: operatorId,
+        pieceCode: pieceCode,
+        lot: lot,
+        mode: mode,
+      );
       state = AnalysisState(
         phase: AnalysisPhase.success,
         result: runResult.inspection,
@@ -70,10 +82,14 @@ class AnalysisController extends StateNotifier<AnalysisState> {
     }
   }
 
-  /// Analyse une image depuis un fichier (galerie)
   Future<void> runFromFile({
     required File imageFile,
     String? token,
+    String? operatorId,
+    String? pieceCode,
+    String? lot,
+    String sourceType = 'gallery',
+    String mode = 'quick',
   }) async {
     state = state.copyWith(
       phase: AnalysisPhase.running,
@@ -86,6 +102,11 @@ class AnalysisController extends StateNotifier<AnalysisState> {
       final runResult = await _analysisService.analyzeFromFile(
         imageFile: imageFile,
         token: token,
+        operatorId: operatorId,
+        pieceCode: pieceCode,
+        lot: lot,
+        sourceType: sourceType,
+        mode: mode,
       );
       state = AnalysisState(
         phase: AnalysisPhase.success,

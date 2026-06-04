@@ -1,10 +1,9 @@
-// lib/widgets/last_inspection_card.dart
+
 
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/inspection_result.dart';
 
-/// Carte affichant les détails de la dernière pièce inspectée.
 class LastInspectionCard extends StatelessWidget {
   final InspectionResult? inspection;
   final VoidCallback? onTap;
@@ -39,7 +38,7 @@ class LastInspectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: titre + badge verdict
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -82,7 +81,6 @@ class LastInspectionCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Nom de la pièce
             Text(
               i.displayName,
               style: const TextStyle(
@@ -93,7 +91,6 @@ class LastInspectionCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Mesures
             Row(
               children: [
                 Expanded(
@@ -120,7 +117,6 @@ class LastInspectionCard extends StatelessWidget {
               ],
             ),
 
-            // Défauts si présents
             if (i.nMissing > 0 || i.nBent > 0) ...[
               const SizedBox(height: 10),
               Container(

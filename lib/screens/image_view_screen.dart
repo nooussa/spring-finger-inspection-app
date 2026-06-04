@@ -1,4 +1,4 @@
-// lib/screens/image_view_screen.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +14,7 @@ class ImageViewScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Récupérer l'inspection depuis les extras du GoRouter
+
     final extra = GoRouterState.of(context).extra;
     final inspection = extra is InspectionResult ? extra : null;
 
@@ -86,10 +86,9 @@ class ImageViewScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image ou placeholder
+
             _buildImageSection(inspection, apiService),
 
-            // Détails de l'inspection
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

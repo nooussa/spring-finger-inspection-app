@@ -1,6 +1,6 @@
-// lib/widgets/system_header.dart
-// Note: Ce widget n'est plus utilisé dans le nouveau design,
-// mais est conservé pour compatibilité.
+
+
+
 
 import 'package:flutter/material.dart';
 import '../theme.dart';

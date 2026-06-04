@@ -1,5 +1,5 @@
-// lib/screens/dashboard_screen.dart
-// ✅ OVERFLOW CORRIGÉ : suppression du height:1.3 + split subtitle + padding bottom 20
+
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,7 +49,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildHeader(BuildContext context, bool isConnected) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -174,7 +173,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildKpiCards(int pass, int fail, double rate, int total) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start, // ← clé : pas d'étirement
@@ -228,7 +226,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildWeeklyQualityCard(
     AsyncValue<List<InspectionResult>> inspectionsAsync,
     BuildContext context,
@@ -351,7 +348,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   Widget _buildLiveFeed(
     AsyncValue<List<InspectionResult>> inspectionsAsync,
     int total,
@@ -430,9 +426,8 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// WIDGETS
-// ═════════════════════════════════════════════════════════════════════════════
+
+
 
 class _GradientBorderBox extends StatelessWidget {
   final Widget child;
@@ -474,12 +469,11 @@ class _GradientBorderBox extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ✅ CORRIGÉ :
-//   • subtitle splitté en line1 + line2 (plus de \n)
-//   • height: 1.3 SUPPRIMÉ des TextStyle (c'était la vraie cause du +5.6px)
-//   • padding bottom = 20 (was 10)
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
+
+
 class _KpiCard extends StatelessWidget {
   final String title;
   final String value;
@@ -514,7 +508,7 @@ class _KpiCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Barre colorée
+
               Container(
                 width: double.infinity,
                 height: 3,
@@ -524,7 +518,7 @@ class _KpiCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Titre
+
               Text(
                 title,
                 style: TextStyle(
@@ -537,7 +531,7 @@ class _KpiCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              // Valeur principale
+
               Text(
                 value,
                 style: TextStyle(
@@ -548,7 +542,7 @@ class _KpiCard extends StatelessWidget {
                 ),
               ),
               SizedBox(height: valueGap),
-              // Ligne 1 (ex: "pièces OK")
+
               Text(
                 line1,
                 style: TextStyle(
@@ -558,7 +552,7 @@ class _KpiCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              // Ligne 2 optionnelle (ex: "= session préc.")
+
               if (line2.isNotEmpty) ...[
                 SizedBox(height: lineGap),
                 Text(
@@ -579,7 +573,6 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _LiveBadge extends StatefulWidget {
   final bool isLive;
   const _LiveBadge({required this.isLive});
@@ -650,7 +643,6 @@ class _LiveBadgeState extends State<_LiveBadge>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _FeedItem extends StatelessWidget {
   final InspectionResult inspection;
   final VoidCallback? onTap;
@@ -750,7 +742,6 @@ class _FeedItem extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _DefectTag extends StatelessWidget {
   final String label;
   final Color color;
@@ -777,7 +768,6 @@ class _DefectTag extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _WeeklyQualityPoint {
   final DateTime weekStart;
   final int passCount;
@@ -1010,7 +1000,6 @@ class _WeeklyQualityChartPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _LegendItemText extends StatelessWidget {
   final Color color;
   final String label;

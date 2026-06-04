@@ -1,4 +1,4 @@
-// lib/providers/inspection_provider.dart
+
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/inspection_result.dart';
@@ -6,20 +6,18 @@ import '../services/inspection_db_service.dart';
 import '../services/websocket_service.dart';
 import '../services/api_service.dart';
 
-/// Provider live via WebSocket (/ws/live)
 final inspectionListProvider =
     StreamProvider<List<InspectionResult>>((ref) async* {
   final wsService = ref.watch(webSocketServiceProvider);
   final token = ref.watch(authTokenProvider);
 
   await for (final payload in wsService.stream(token: token)) {
-    // Mettre à jour le timestamp du dernier fetch réussi
+
     ref.read(lastFetchTimeProvider.notifier).state = DateTime.now();
     yield payload.inspections;
   }
 });
 
-/// Provider pour récupérer plus d'inspections (pour l'historique)
 final inspectionHistoryProvider =
     StreamProvider.family<List<InspectionResult>, int>((ref, count) async* {
   final dbService = ref.watch(inspectionDbServiceProvider);
@@ -33,7 +31,6 @@ final inspectionHistoryProvider =
   }
 });
 
-/// Provider des stats (poll toutes les 10 secondes)
 final statsProvider = StreamProvider<Map<String, dynamic>>((ref) async* {
   final wsService = ref.watch(webSocketServiceProvider);
   final token = ref.watch(authTokenProvider);
@@ -44,7 +41,6 @@ final statsProvider = StreamProvider<Map<String, dynamic>>((ref) async* {
   }
 });
 
-/// Provider dérivé : nombre de PASS
 final passCountProvider = Provider<int>((ref) {
   final statsAsync = ref.watch(statsProvider);
   return statsAsync.when(
@@ -54,7 +50,6 @@ final passCountProvider = Provider<int>((ref) {
   );
 });
 
-/// Provider dérivé : nombre de FAIL
 final failCountProvider = Provider<int>((ref) {
   final statsAsync = ref.watch(statsProvider);
   return statsAsync.when(
@@ -64,7 +59,6 @@ final failCountProvider = Provider<int>((ref) {
   );
 });
 
-/// Provider dérivé : total inspections
 final totalCountProvider = Provider<int>((ref) {
   final statsAsync = ref.watch(statsProvider);
   return statsAsync.when(
@@ -74,7 +68,6 @@ final totalCountProvider = Provider<int>((ref) {
   );
 });
 
-/// Provider dérivé : taux de conformité (double 0.0-1.0)
 final conformityRateProvider = Provider<double>((ref) {
   final pass = ref.watch(passCountProvider);
   final fail = ref.watch(failCountProvider);
@@ -83,7 +76,6 @@ final conformityRateProvider = Provider<double>((ref) {
   return pass / total;
 });
 
-/// Provider dérivé : taux de conformité depuis stats API (plus précis)
 final conformityRateFromStatsProvider = Provider<double>((ref) {
   final statsAsync = ref.watch(statsProvider);
   return statsAsync.when(
@@ -94,7 +86,6 @@ final conformityRateFromStatsProvider = Provider<double>((ref) {
   );
 });
 
-/// Provider pour le pitch moyen depuis les stats
 final avgPitchProvider = Provider<double>((ref) {
   final statsAsync = ref.watch(statsProvider);
   return statsAsync.when(
@@ -104,7 +95,6 @@ final avgPitchProvider = Provider<double>((ref) {
   );
 });
 
-/// Provider pour le total de doigts manquants
 final totalMissingProvider = Provider<int>((ref) {
   final statsAsync = ref.watch(statsProvider);
   return statsAsync.when(
@@ -114,7 +104,6 @@ final totalMissingProvider = Provider<int>((ref) {
   );
 });
 
-/// Provider pour le total de doigts pliés
 final totalBentProvider = Provider<int>((ref) {
   final statsAsync = ref.watch(statsProvider);
   return statsAsync.when(
@@ -124,13 +113,11 @@ final totalBentProvider = Provider<int>((ref) {
   );
 });
 
-/// Filtre pour l'historique
 enum InspectionFilter { all, pass, fail }
 
 final inspectionFilterProvider =
     StateProvider<InspectionFilter>((ref) => InspectionFilter.all);
 
-/// Provider filtré des inspections pour l'historique
 final filteredInspectionsProvider =
     Provider<AsyncValue<List<InspectionResult>>>((ref) {
   final inspectionsAsync = ref.watch(inspectionHistoryProvider(100));

@@ -29,11 +29,21 @@ class AnalysisService {
 
   Future<AnalysisRunResult> analyzeNow({
     String? token,
+    String? operatorId,
+    String? pieceCode,
+    String? lot,
+    String mode = 'quick',
     Duration timeout = const Duration(seconds: 30),
     Duration pollInterval = const Duration(seconds: 2),
   }) async {
     try {
-      final jobId = await _startAnalysis(token: token);
+      final jobId = await _startAnalysis(
+        token: token,
+        operatorId: operatorId,
+        pieceCode: pieceCode,
+        lot: lot,
+        mode: mode,
+      );
       final inspection = await _waitForResult(
         jobId: jobId,
         token: token,
@@ -57,10 +67,14 @@ class AnalysisService {
     }
   }
 
-  /// Analyse une image depuis un fichier (galerie, système de fichiers)
   Future<AnalysisRunResult> analyzeFromFile({
     required File imageFile,
     String? token,
+    String? operatorId,
+    String? pieceCode,
+    String? lot,
+    String sourceType = 'gallery',
+    String mode = 'quick',
     Duration timeout = const Duration(seconds: 30),
     Duration pollInterval = const Duration(seconds: 2),
   }) async {
@@ -68,6 +82,11 @@ class AnalysisService {
       final jobId = await _startAnalysisWithFile(
         imageFile: imageFile,
         token: token,
+        operatorId: operatorId,
+        pieceCode: pieceCode,
+        lot: lot,
+        sourceType: sourceType,
+        mode: mode,
       );
       final inspection = await _waitForResult(
         jobId: jobId,
@@ -95,18 +114,21 @@ class AnalysisService {
   Future<String> _startAnalysisWithFile({
     required File imageFile,
     String? token,
+    String? operatorId,
+    String? pieceCode,
+    String? lot,
+    String sourceType = 'gallery',
+    String mode = 'quick',
   }) async {
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('${_apiService.baseUrl}/analysis/upload'),
     );
 
-    // Add auth header if token is provided
     if (token != null && token.isNotEmpty) {
       request.headers['Authorization'] = 'Bearer $token';
     }
 
-    // Add image file
     request.files.add(
       await http.MultipartFile.fromPath(
         'image',
@@ -114,14 +136,22 @@ class AnalysisService {
       ),
     );
 
-    // Add analysis parameters
-    request.fields['source_type'] = 'gallery';
-    request.fields['mode'] = 'quick';
+    request.fields['source_type'] = sourceType;
+    request.fields['mode'] = mode;
+    if (operatorId != null && operatorId.trim().isNotEmpty) {
+      request.fields['operator_id'] = operatorId.trim();
+    }
+    if (pieceCode != null && pieceCode.trim().isNotEmpty) {
+      request.fields['piece_code'] = pieceCode.trim();
+    }
+    if (lot != null && lot.trim().isNotEmpty) {
+      request.fields['lot'] = lot.trim();
+    }
 
     try {
       final response = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
+            const Duration(seconds: 30),
+          );
 
       final responseBody = await response.stream.bytesToString();
 
@@ -151,15 +181,32 @@ class AnalysisService {
     }
   }
 
-  Future<String> _startAnalysis({String? token}) async {
+  Future<String> _startAnalysis({
+    String? token,
+    String? operatorId,
+    String? pieceCode,
+    String? lot,
+    String mode = 'quick',
+  }) async {
+    final body = <String, dynamic>{
+      'source_type': 'camera',
+      'mode': mode,
+    };
+    if (operatorId != null && operatorId.trim().isNotEmpty) {
+      body['operator_id'] = operatorId.trim();
+    }
+    if (pieceCode != null && pieceCode.trim().isNotEmpty) {
+      body['piece_code'] = pieceCode.trim();
+    }
+    if (lot != null && lot.trim().isNotEmpty) {
+      body['lot'] = lot.trim();
+    }
+
     final response = await _client
         .post(
           Uri.parse('${_apiService.baseUrl}/analysis/start'),
           headers: _headers(token),
-          body: jsonEncode({
-            'source_type': 'camera',
-            'mode': 'quick',
-          }),
+          body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 10));
 

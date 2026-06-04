@@ -1,4 +1,4 @@
-// lib/screens/login_screen.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,13 +64,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
 
-      // Stocker le token et l'utilisateur dans Riverpod
       ref.read(authTokenProvider.notifier).state = token;
       ref.read(authUserProvider.notifier).state = user;
       await api.saveAuth(token: token, user: user);
 
       if (!mounted) return;
-      // Naviguer vers le dashboard
+
       context.go('/');
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -104,20 +103,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    // If server reachable, check if any employee exists. If none, route to setup.
     try {
       final hasAny = await api.hasAnyEmployee();
       if (!mounted) return;
       if (!hasAny) {
-        // Show setup screen before login
+
         context.go('/setup');
         return;
       }
     } catch (_) {
-      // ignore - fallback to normal flow
+
     }
 
-    // Si l'URL est locale, tenter une détection automatique
     final (token, user) = await api.loadAuth();
     if (token != null) {
       final ok = await api.testConnection(api.baseUrl);
@@ -203,7 +200,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo / Header
+
                       Container(
                         width: 100,
                         height: 100,
@@ -254,7 +251,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 36),
 
-                      // Login field
                       TextField(
                         controller: _loginCtrl,
                         enabled: !_loading,
@@ -293,7 +289,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Password field
                       TextField(
                         controller: _passCtrl,
                         enabled: !_loading,
@@ -334,7 +329,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Error message
                       if (_error != null)
                         Container(
                           width: double.infinity,
@@ -366,7 +360,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       if (_error != null) const SizedBox(height: 24),
 
-                      // Login button with Gradient
                       Container(
                         width: double.infinity,
                         height: 56,

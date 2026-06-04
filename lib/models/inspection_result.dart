@@ -1,7 +1,6 @@
-// lib/models/inspection_result.dart
 
-/// Modèle représentant un résultat d'inspection PCB.
-/// Correspond à la collection MongoDB "inspections".
+
+
 class InspectionResult {
   final String id;
   final DateTime timestamp;
@@ -51,10 +50,9 @@ class InspectionResult {
     this.imagePath,
   });
 
-  /// Factory pour parser le JSON de l'API/MongoDB.
-  /// Gère les deux formats d'ID (_id et id).
+
   factory InspectionResult.fromJson(Map<String, dynamic> json) {
-    // Gestion _id / id (MongoDB retourne les deux)
+
     String extractId(Map<String, dynamic> j) {
       if (j['_id'] != null) {
         if (j['_id'] is Map && j['_id']['\$oid'] != null) {
@@ -65,7 +63,6 @@ class InspectionResult {
       return j['id']?.toString() ?? '';
     }
 
-    // Parse timestamp (peut être ISO string ou objet MongoDB)
     DateTime parseTimestamp(dynamic ts) {
       if (ts == null) return DateTime.now();
       if (ts is String) return DateTime.tryParse(ts) ?? DateTime.now();
@@ -169,6 +166,22 @@ class InspectionResult {
       }
     }
 
+    final fingers = (json['fingers'] as List<dynamic>?)
+            ?.map((f) => FingerData.fromJson(f as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    if (pitchesMm.isEmpty && fingers.isNotEmpty) {
+      final firstThreeFingers = fingers.take(3).toList();
+      if (firstThreeFingers.any((finger) => finger.missing)) {
+        pitchesMm = [];
+        pitchesOk = [];
+      } else {
+        pitchesMm = firstThreeFingers.map((finger) => finger.pitchMm).toList();
+        pitchesOk = firstThreeFingers.map((finger) => finger.pitchOk).toList();
+      }
+    }
+
     return InspectionResult(
       id: extractId(json),
       timestamp: parseTimestamp(json['timestamp']),
@@ -199,10 +212,7 @@ class InspectionResult {
           ? InspectionOperator.fromJson(
               json['operator'] as Map<String, dynamic>)
           : null,
-      fingers: (json['fingers'] as List<dynamic>?)
-              ?.map((f) => FingerData.fromJson(f as Map<String, dynamic>))
-              .toList() ??
-          [],
+        fingers: fingers,
       defauts: (json['defauts'] as List<dynamic>?)
               ?.map((d) => DefautData.fromJson(d as Map<String, dynamic>))
               .toList() ??
@@ -214,11 +224,9 @@ class InspectionResult {
 
   bool get isPass => verdict == 'PASS';
 
-  /// Obtenir le code de pièce ou l'ID par défaut
   String get displayName => piece?.pieceCode ?? id;
 }
 
-/// Données de pièce/lot
 class InspectionPiece {
   final String? pieceCode;
   final String? lot;
@@ -233,7 +241,6 @@ class InspectionPiece {
   }
 }
 
-/// Données opérateur
 class InspectionOperator {
   final String? operatorId;
   final String? login;
@@ -257,7 +264,6 @@ class InspectionOperator {
   }
 }
 
-/// Données d'un doigt individuel
 class FingerData {
   final int fingerNum;
   final double pitchMm;
@@ -299,7 +305,6 @@ class FingerData {
   }
 }
 
-/// Données d'un défaut détecté
 class DefautData {
   final int fingerNum;
   final String typeDefaut;

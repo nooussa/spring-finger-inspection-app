@@ -1,9 +1,8 @@
-// lib/widgets/status_badge.dart
+
 
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// Badge de statut coloré réutilisable.
 class StatusBadge extends StatelessWidget {
   final String status;
   final bool animate;
@@ -92,7 +91,6 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-/// Point animé (clignotant) pour les badges LIVE
 class _AnimatedDot extends StatefulWidget {
   final Color color;
   const _AnimatedDot({required this.color});
@@ -138,7 +136,6 @@ class _AnimatedDotState extends State<_AnimatedDot>
   }
 }
 
-/// Badge de connexion API (RUNNING/STOPPED)
 class ConnectionBadge extends StatelessWidget {
   final bool connected;
 
@@ -156,7 +153,6 @@ class ConnectionBadge extends StatelessWidget {
   }
 }
 
-/// Badge de dérive SPC
 class DriftBadge extends StatelessWidget {
   final bool driftDetected;
 

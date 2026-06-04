@@ -359,7 +359,6 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     }
   }
 
-  // Employee creation removed from admin panel UI — handled elsewhere.
 
   Color get _rolePreviewColor =>
       _adminPostes.contains(_selectedPoste) ? _adminPurple : _adminBlue;
@@ -378,7 +377,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              // Header styled like dashboard
+
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
@@ -393,7 +392,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 ),
                 child: Row(
                   children: [
-                    // Logo removed per request (header without image)
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -655,7 +654,6 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     );
   }
 
-  // Add-employee tab removed from admin panel; creation handled elsewhere.
 
   Widget _tableCell(
     String text, {

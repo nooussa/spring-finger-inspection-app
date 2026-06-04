@@ -1,9 +1,8 @@
-// lib/widgets/kpi_row.dart
+
 
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
-/// Rangée de KPIs avec PASS / FAIL / YIELD en grand format.
 class KpiRow extends StatelessWidget {
   final int passCount;
   final int failCount;

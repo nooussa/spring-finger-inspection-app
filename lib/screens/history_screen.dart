@@ -1,4 +1,4 @@
-// lib/screens/history_screen.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,9 +64,9 @@ class HistoryScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Barre de filtres
+
           _buildFilterBar(ref, filter),
-          // Liste des inspections
+
           Expanded(
             child: filteredAsync.when(
               data: (inspections) {

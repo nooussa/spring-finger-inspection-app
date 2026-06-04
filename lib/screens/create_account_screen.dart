@@ -1,4 +1,4 @@
-// lib/screens/create_account_screen.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,7 +92,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
       final api = ref.read(apiServiceProvider);
       final user = await api.createAccount(empId: empId, login: login, password: pwd);
       if (!mounted) return;
-      // Show success dialog and navigate back to login
+
       await showDialog<void>(
         context: context,
         builder: (c) => AlertDialog(

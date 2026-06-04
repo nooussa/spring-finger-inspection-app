@@ -1,5 +1,5 @@
-// lib/widgets/verdict_banner.dart
-// Note: Ce widget n'est plus utilisé dans le nouveau design light.
+
+
 
 import 'package:flutter/material.dart';
 import '../theme.dart';

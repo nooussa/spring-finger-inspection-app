@@ -1,4 +1,4 @@
-// lib/router.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +18,7 @@ import 'theme.dart';
 final appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
-    // server configuration screen removed from mobile flow
+
     GoRoute(
       path: '/login',
       builder: (c, s) => const LoginScreen(),
@@ -80,7 +80,7 @@ class _Shell extends ConsumerWidget {
         label: 'DASHBOARD',
         route: '/',
       ),
-      // SPC removed
+
       const _NavDestination(
         icon: Icons.videocam_outlined,
         selectedIcon: Icons.videocam,
@@ -175,7 +175,7 @@ class _NavItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // Underline indicator
+
           Container(
             width: 20,
             height: 2,

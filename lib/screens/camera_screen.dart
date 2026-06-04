@@ -1,4 +1,4 @@
-// lib/screens/camera_screen.dart
+
 
 import 'dart:async';
 import 'dart:io';
@@ -26,7 +26,7 @@ class CameraScreen extends ConsumerStatefulWidget {
 
 class _CameraScreenState extends ConsumerState<CameraScreen>
     with SingleTickerProviderStateMixin {
-  // Lot par défaut vide — l'utilisateur saisira le lot manuellement.
+
   static const String _defaultLotCode = '';
 
   final ImagePicker _picker = ImagePicker();
@@ -49,11 +49,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   Color _arduinoStatusColor = AppTheme.warnOrange;
   IconData _arduinoStatusIcon = Icons.usb_off_outlined;
   Timer? _arduinoStatusResetTimer;
-  Timer? _liveAnalyzeTimer;
   bool _liveStreamError = false;
   bool _pieceWasSaved = false;
   String? _lastLiveVerdictSent;
+  bool _liveAnalysisInFlight = false;
+  DateTime? _lastLiveAnalysisAt;
   int _lotLookupToken = 0;
+
+  static const Duration _liveAnalyzeMinInterval = Duration(milliseconds: 900);
 
   _CameraSource _source = _CameraSource.idle;
   File? _localImage;
@@ -83,7 +86,6 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
 
   @override
   void dispose() {
-    _liveAnalyzeTimer?.cancel();
     _lotController.dispose();
     _clockTimer?.cancel();
     _arduinoStatusResetTimer?.cancel();
@@ -148,14 +150,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
         nextCounter = maxCounter + 1;
       }
     } catch (_) {
-      // Keep the local fallback value.
+
     }
 
     if (!mounted || token != _lotLookupToken) return;
     setState(() {
       _lotCode = normalizedLot.isEmpty ? _defaultLotCode : normalizedLot;
       _pieceCounter = nextCounter;
-      // Only update the controller text when we have a non-empty lot code.
+
       if (normalizedLot.isNotEmpty && _lotController.text != _lotCode) {
         _lotController.value = TextEditingValue(
           text: _lotCode,
@@ -234,10 +236,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     });
   }
 
-  void _resetAnalysisPreview() {
-    _annotatedImageUrl = null;
-    ref.read(analysisControllerProvider.notifier).reset();
-  }
+
 
   void _advancePieceIfNeeded() {
     if (_pieceWasSaved) {
@@ -246,13 +245,13 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   }
 
   void _stopLive({bool keepConnection = true}) {
-    _liveAnalyzeTimer?.cancel();
-    _liveAnalyzeTimer = null;
     _liveOn = false;
     _liveAnalyzeOn = false;
     _liveStream = null;
     _liveStreamError = false;
     _lastLiveVerdictSent = null;
+    _liveAnalysisInFlight = false;
+    _lastLiveAnalysisAt = null;
     _latestLiveFrame = null;
     if (!keepConnection) {
       _cameraConnected = false;
@@ -387,25 +386,29 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
       _cameraConnected = true;
       _pieceWasSaved = false;
       _lastLiveVerdictSent = null;
+      _liveAnalysisInFlight = false;
+      _lastLiveAnalysisAt = null;
       _latestLiveFrame = null;
     });
   }
 
-  void _startLiveAnalyzeLoop() {
-    _liveAnalyzeTimer?.cancel();
-    _liveAnalyzeTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-      if (!mounted || !_liveOn || !_liveAnalyzeOn) {
-        return;
-      }
-      final analysisState = ref.read(analysisControllerProvider);
-      if (analysisState.phase == AnalysisPhase.running) {
-        return;
-      }
-      if (_latestLiveFrame == null) {
-        return;
-      }
-      await _analyzeLiveFrame();
-    });
+  void _onLiveFrame(Uint8List frame) {
+    _latestLiveFrame = frame;
+    if (!_liveOn || !_liveAnalyzeOn) return;
+    _scheduleLiveAnalysis();
+  }
+
+  void _scheduleLiveAnalysis() {
+    if (!mounted || !_liveOn || !_liveAnalyzeOn) return;
+    if (_liveAnalysisInFlight) return;
+
+    final now = DateTime.now();
+    if (_lastLiveAnalysisAt != null &&
+        now.difference(_lastLiveAnalysisAt!) < _liveAnalyzeMinInterval) {
+      return;
+    }
+
+    unawaited(_analyzeLiveFrame(autoLive: true));
   }
 
   void _toggleLiveAnalyze() {
@@ -419,11 +422,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     });
 
     if (_liveAnalyzeOn) {
-      _startLiveAnalyzeLoop();
       _showMessage('Analyse live activée');
+      _scheduleLiveAnalysis();
     } else {
-      _liveAnalyzeTimer?.cancel();
-      _liveAnalyzeTimer = null;
       _showMessage('Analyse live arrêtée');
     }
   }
@@ -470,25 +471,42 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
   Future<void> _analyzeCurrent() async {
     final analysisState = ref.read(analysisControllerProvider);
     if (analysisState.phase == AnalysisPhase.running) return;
+    final token = ref.read(authTokenProvider);
+    final operatorId = ref.read(authUserProvider)?.employeeId;
 
     if (_liveOn) {
-      await _analyzeLiveFrame();
+      if (!_liveAnalyzeOn) {
+        setState(() {
+          _liveAnalyzeOn = true;
+        });
+        _showMessage('Analyse live activée');
+      }
+      await _analyzeLiveFrame(autoLive: false);
       return;
     }
-
-    final token = ref.read(authTokenProvider);
 
     if (_localImage != null) {
       await ref.read(analysisControllerProvider.notifier).runFromFile(
             imageFile: _localImage!,
             token: token,
+            operatorId: operatorId,
+            pieceCode: _currentPieceCode,
+            lot: _lotCode,
+            sourceType: 'gallery',
+            mode: 'quick',
           );
       await _syncAfterAnalysis(fromLive: false);
       return;
     }
 
     if (_cameraConnected) {
-      await ref.read(analysisControllerProvider.notifier).run(token: token);
+      await ref.read(analysisControllerProvider.notifier).run(
+            token: token,
+            operatorId: operatorId,
+            pieceCode: _currentPieceCode,
+            lot: _lotCode,
+            mode: 'quick',
+          );
       await _syncAfterAnalysis(fromLive: false, fromCamera: true);
       return;
     }
@@ -496,12 +514,26 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     _showMessage('Capture or open an image first');
   }
 
-  Future<void> _analyzeLiveFrame() async {
-    final frame = _latestLiveFrame;
-    if (frame == null) {
-      _showMessage('Capture or open an image first');
+  Future<void> _analyzeLiveFrame({required bool autoLive}) async {
+    if (!_liveOn || _liveAnalysisInFlight) {
       return;
     }
+    if (autoLive && !_liveAnalyzeOn) {
+      return;
+    }
+
+    final frame = _latestLiveFrame;
+    if (frame == null) {
+      return;
+    }
+
+    final analysisState = ref.read(analysisControllerProvider);
+    if (analysisState.phase == AnalysisPhase.running) {
+      return;
+    }
+
+    _liveAnalysisInFlight = true;
+    _lastLiveAnalysisAt = DateTime.now();
 
     _advancePieceIfNeeded();
 
@@ -512,12 +544,19 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
 
     try {
       final token = ref.read(authTokenProvider);
+      final operatorId = ref.read(authUserProvider)?.employeeId;
       await ref.read(analysisControllerProvider.notifier).runFromFile(
             imageFile: tempFile,
             token: token,
+            operatorId: operatorId,
+            pieceCode: _currentPieceCode,
+            lot: _lotCode,
+            sourceType: 'live_frame',
+            mode: 'quick',
           );
       await _syncAfterAnalysis(fromLive: true);
     } finally {
+      _liveAnalysisInFlight = false;
       try {
         if (await tempFile.exists()) {
           await tempFile.delete();
@@ -612,38 +651,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
     }
   }
 
-  Future<void> _logout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Voulez-vous vraiment vous déconnecter ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Déconnexion'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    _stopLive(keepConnection: false);
-    ref.read(analysisControllerProvider.notifier).reset();
-
-    ref.read(authTokenProvider.notifier).state = null;
-    ref.read(authUserProvider.notifier).state = null;
-    final api = ref.read(apiServiceProvider);
-    await api.clearAuth();
-
-    if (!mounted) return;
-    context.go('/login');
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -808,7 +816,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                 liveStream: _liveStream,
                 localImage: _localImage,
                 annotatedImageUrl: _annotatedImageUrl,
-                onLiveFrame: (frame) => _latestLiveFrame = frame,
+                onLiveFrame: _onLiveFrame,
                 onCameraLive: _toggleLive,
                 onCapture: _pickCapture,
                 onGallery: _pickGallery,
@@ -915,39 +923,8 @@ class _ImageZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget content;
-    if (liveOn && annotatedImageUrl != null) {
-      content = Stack(
-        children: [
-          Positioned.fill(
-            child: Image.network(
-              annotatedImageUrl!,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const _ImagePlaceholder(
-                title: 'Image d\'analyse non disponible',
-                subtitle: 'Connect camera or open an image',
-                icon: Icons.broken_image_outlined,
-              ),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return const _ImagePlaceholder(
-                  title: 'Chargement de l\'annotation...',
-                  subtitle: 'Patientez un instant',
-                  icon: Icons.hourglass_bottom,
-                );
-              },
-            ),
-          ),
-          if (onOpenResult != null)
-            Positioned.fill(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(onTap: onOpenResult),
-              ),
-            ),
-        ],
-      );
-    } else if (liveOn) {
-      content = liveStreamError
+    if (liveOn) {
+      final liveContent = liveStreamError
           ? const _ImagePlaceholder(
               title: 'Caméra non disponible',
               subtitle: 'Connect camera or open an image',
@@ -979,6 +956,60 @@ class _ImageZone extends StatelessWidget {
                     );
                   },
                 );
+      content = Stack(
+        children: [
+          Positioned.fill(child: liveContent),
+          if (annotatedImageUrl != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.72,
+                  child: Image.network(
+                    annotatedImageUrl!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          if (annotatedImageUrl != null && onOpenResult != null)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onOpenResult,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Text(
+                      'Dernière analyse',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
     } else if (annotatedImageUrl != null) {
       content = Stack(
         children: [

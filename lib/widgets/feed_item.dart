@@ -1,11 +1,10 @@
-// lib/widgets/feed_item.dart
+
 
 import 'package:flutter/material.dart';
 import '../models/inspection_result.dart';
 import '../theme.dart';
 
-/// Widget de ligne pour le flux d'inspections.
-/// Affiche: badge PASS/FAIL, piece_code ou ID, pitch_mean_mm, timestamp.
+
 class FeedItem extends StatelessWidget {
   final InspectionResult inspection;
   final VoidCallback? onTap;
@@ -62,7 +61,7 @@ class FeedItem extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
-            // Badge PASS/FAIL
+
             Container(
               width: 44,
               height: 22,
@@ -82,7 +81,7 @@ class FeedItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Infos pièce
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +104,7 @@ class FeedItem extends StatelessWidget {
                 ],
               ),
             ),
-            // Infos défauts si présents
+
             if (inspection.nMissing > 0 || inspection.nBent > 0)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -131,7 +130,7 @@ class FeedItem extends StatelessWidget {
                   ],
                 ),
               ),
-            // Timestamp
+
             Text(
               ts,
               style: const TextStyle(
@@ -152,7 +151,6 @@ class FeedItem extends StatelessWidget {
   }
 }
 
-/// Widget simplifié pour le flux compact
 class FeedItemCompact extends StatelessWidget {
   final InspectionResult inspection;
   final VoidCallback? onTap;

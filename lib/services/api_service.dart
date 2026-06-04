@@ -1,4 +1,4 @@
-// lib/services/api_service.dart
+
 
 import 'dart:async';
 import 'dart:convert';
@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/inspection_result.dart';
 
-/// Utilisateur opérateur authentifié
 class OperatorUser {
   final String login;
   final String? displayName;
@@ -40,7 +39,6 @@ class OperatorUser {
     };
   }
 
-  /// Vérifie si l'utilisateur est admin
   bool get isAdmin {
     const adminRoles = [
       'chef_ligne',
@@ -53,10 +51,9 @@ class OperatorUser {
   }
 }
 
-/// Service API pour communiquer avec le backend FastAPI
 class ApiService {
-  // Remplacer par l'IP LAN du PC qui exécute FastAPI.
-  // Exemple: http://192.168.1.87:8000
+
+
   static const String _defaultBaseUrl = 'http://10.0.30.31:8000';
   static const String _baseUrlKey = 'api_base_url';
   static const String _authTokenKey = 'auth_token';
@@ -68,10 +65,8 @@ class ApiService {
 
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  /// URL de base actuelle
   String get baseUrl => _baseUrl;
 
-  /// Initialise le service et charge l'URL sauvegardée
   Future<void> init() {
     _initFuture ??= _loadPrefs();
     return _initFuture!;
@@ -83,7 +78,6 @@ class ApiService {
     _baseUrl = _normalizeBaseUrl(savedUrl) ?? _defaultBaseUrl;
   }
 
-  /// Définit et sauvegarde l'URL de base
   Future<void> setBaseUrl(String url) async {
     final cleanUrl = _normalizeBaseUrl(url);
     if (cleanUrl == null) {
@@ -147,18 +141,15 @@ class ApiService {
     await prefs.remove(_authUserKey);
   }
 
-  /// Garantit une URL de base valide.
   Future<String?> ensureBaseUrl({
     Duration timeout = const Duration(milliseconds: 500),
   }) async {
     await init();
-    // Try a set of candidate base URLs and pick the first healthy one.
+
     final candidates = <String>[];
 
-    // Start with the currently configured base URL
     candidates.add(_baseUrl);
 
-    // Common local addresses to try when running on emulator or device
     if (!candidates.contains('http://127.0.0.1:8000')) {
       candidates.add('http://127.0.0.1:8000');
     }
@@ -166,17 +157,15 @@ class ApiService {
       candidates.add('http://localhost:8000');
     }
 
-    // Android emulator maps host machine localhost to 10.0.2.2
     try {
       if (Platform.isAndroid) {
         const emulatorHost = 'http://10.0.2.2:8000';
         if (!candidates.contains(emulatorHost)) candidates.add(emulatorHost);
       }
     } catch (_) {
-      // Platform may not be available in some contexts; ignore.
+
     }
 
-    // Finally try the hardcoded default (useful for saved legacy configs)
     if (!candidates.contains(_defaultBaseUrl)) candidates.add(_defaultBaseUrl);
 
     for (final candidate in candidates) {
@@ -189,7 +178,7 @@ class ApiService {
     }
 
     return null;
-  }
+  } 
 
   Future<bool> _isHealthy(String baseUrl, Duration timeout) async {
     try {
@@ -207,13 +196,11 @@ class ApiService {
     }
   }
 
-  // Public pour les tests de connexion
   Future<bool> testConnection(String baseUrl) =>
       _isHealthy(baseUrl, const Duration(seconds: 5));
 
-  /// Authentification - login
-  /// POST /auth/login avec { login, password }
-  /// Si l'API n'a pas de route auth, fait GET /health et accepte tout login non vide (mode dev)
+
+
   Future<(String, OperatorUser)> login({
     required String login,
     required String password,
@@ -224,7 +211,7 @@ class ApiService {
     }
 
     try {
-      // Essayer d'abord POST /auth/login
+
       final response = await _client
           .post(
             Uri.parse('$_baseUrl/auth/login'),
@@ -246,17 +233,16 @@ class ApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      // Si l'endpoint n'existe pas, fallback sur /health
+
     }
 
-    // Mode développement : tester connexion avec /health
     try {
       final healthResponse = await _client
           .get(Uri.parse('$_baseUrl/health'))
           .timeout(const Duration(seconds: 5));
 
       if (healthResponse.statusCode == 200) {
-        // API accessible, accepter le login en mode dev
+
         return (
           'dev-token-$trimmedLogin-${DateTime.now().millisecondsSinceEpoch}',
           OperatorUser(
@@ -270,8 +256,6 @@ class ApiService {
     throw const ApiException('Impossible de se connecter au serveur');
   }
 
-  /// Create an operator account using employee ID
-  /// POST /auth/create-account { emp_id, login, password }
   Future<OperatorUser> createAccount({
     required String empId,
     required String login,
@@ -298,7 +282,7 @@ class ApiService {
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      // The backend returns the operator without password_hash
+
       return OperatorUser.fromJson(data);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -306,8 +290,7 @@ class ApiService {
     }
   }
 
-  /// Récupère les N dernières inspections
-  /// GET /inspections/latest?n=n
+
   Future<List<InspectionResult>> getLatestInspections({int n = 20}) async {
     try {
       final response = await _client
@@ -354,7 +337,6 @@ class ApiService {
     return _getAdminList('/admin/employees', token);
   }
 
-  /// Get a single employee by id (public endpoint)
   Future<Map<String, dynamic>> getEmployee({
     required String empId,
   }) async {
@@ -376,7 +358,6 @@ class ApiService {
     }
   }
 
-  /// Check if any employee exists on the server (used for first-run setup)
   Future<bool> hasAnyEmployee() async {
     try {
       final response = await _client
@@ -393,7 +374,6 @@ class ApiService {
     }
   }
 
-  /// Create the very first employee without auth (setup flow only)
   Future<Map<String, dynamic>> createFirstEmployee({
     required String empId,
     required String name,
@@ -569,8 +549,7 @@ class ApiService {
     }
   }
 
-  /// Changer le mot de passe de l'utilisateur connecté
-  /// POST /auth/change-password
+
   Future<void> changePassword({
     required String token,
     required String currentPassword,
@@ -619,8 +598,7 @@ class ApiService {
     }
   }
 
-  /// Récupère les statistiques globales
-  /// GET /stats
+
   Future<Map<String, dynamic>> getStats() async {
     try {
       final response = await _client
@@ -641,8 +619,7 @@ class ApiService {
     }
   }
 
-  /// Vérifie la santé du serveur
-  /// GET /health
+
   Future<Map<String, dynamic>> checkHealth() async {
     try {
       final response = await _client
@@ -662,13 +639,10 @@ class ApiService {
     }
   }
 
-  /// URL du flux caméra live
   String get cameraStreamUrl => '$_baseUrl/camera/live';
 
-  /// URL d'une image caméra unique (plus fiable pour mobile)
   String get cameraFrameUrl => '$_baseUrl/camera/frame';
 
-  /// URL WebSocket live
   String get webSocketLiveUrl {
     final baseUri = Uri.parse(_baseUrl);
     final scheme = baseUri.scheme == 'https' ? 'wss' : 'ws';
@@ -687,8 +661,7 @@ class ApiService {
     ).toString();
   }
 
-  /// Tentative de détection / statut Arduino côté backend.
-  /// Tente plusieurs endpoints communs et renvoie un message lisible.
+
   Future<String> detectArduino(
       {Duration timeout = const Duration(seconds: 5)}) async {
     final candidates = [
@@ -729,15 +702,15 @@ class ApiService {
               }
             }
           } catch (_) {
-            // Fallback texte brut.
+
           }
 
           return body;
         }
-        // 404 means endpoint not present — try next
+
         if (resp.statusCode == 404) continue;
       } catch (_) {
-        // ignore and try next
+
         continue;
       }
     }
@@ -745,7 +718,6 @@ class ApiService {
     throw const ApiException('Endpoint Arduino indisponible sur le serveur');
   }
 
-  /// Envoie un verdict PASS/FAIL au backend pour relais UART.
   Future<bool> sendArduinoVerdict(String verdict) async {
     final normalized = verdict.trim().toUpperCase();
     if (normalized != 'PASS' && normalized != 'FAIL') {
@@ -785,7 +757,6 @@ class ApiService {
   }
 }
 
-/// Exception personnalisée pour les erreurs API
 class ApiException implements Exception {
   final String message;
   const ApiException(this.message);
@@ -794,22 +765,18 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-/// Provider singleton pour ApiService
 final apiServiceProvider = Provider<ApiService>((ref) {
   final service = ApiService();
-  // Initialisation async - sera fait au premier accès
+
   service.init();
   ref.onDispose(() => service.dispose());
   return service;
 });
 
-/// Provider pour l'utilisateur authentifié
 final authUserProvider = StateProvider<OperatorUser?>((ref) => null);
 
-/// Provider pour le token d'authentification
 final authTokenProvider = StateProvider<String?>((ref) => null);
 
-/// Provider dérivé: l'utilisateur est-il connecté?
 final isLoggedInProvider = Provider<bool>((ref) {
   return ref.watch(authTokenProvider) != null;
 });
